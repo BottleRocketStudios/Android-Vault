@@ -38,7 +38,7 @@ Add the jcenter repository and include the library in your project with the comp
 
         dependencies {
             ...
-            compile 'com.bottlerocketstudios:vault:1.2.4'
+            compile 'com.bottlerocketstudios:vault:1.2.5'
         }
 
 In rare cases where you need to pull a snapshot build to help troubleshoot the develop branch, snapshots are hosted by JFrog. You should not ship a release using the snapshot library as the actual binary referenced by snapshot is going to change with every build of the develop branch. In the best case you will have irreproducible builds. In the worst case, human extinction. In some more likely middle case, you will have buggy or experimental code in your released app.
@@ -53,7 +53,7 @@ In rare cases where you need to pull a snapshot build to help troubleshoot the d
          
          dependencies {
             ...
-            compile 'com.bottlerocketstudios:vault:1.2.5-SNAPSHOT'
+            compile 'com.bottlerocketstudios:vault:1.2.6-SNAPSHOT'
          }
 
 ##### Automatically Keyed
@@ -116,7 +116,7 @@ This project must be built with gradle.
     *   Build only: `./gradlew --refresh-dependencies clean jarRelease`
 
 ### Changelog
-*   1.2.4 - Open source release.
+*   1.2.5 - Open source release.
 *   1.2.3 - Key Caching.
     *   Now caching the SecretKey in memory to further increase multithreaded performance with frequent reads. Better to have one SecretKey in memory than many garbage collected copies of it all over the heap.
 *   1.2.2 - Fix Concurrency.
