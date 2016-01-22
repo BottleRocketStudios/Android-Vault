@@ -1,0 +1,180 @@
+
+apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.jfrog.artifactory-upload'
+
+group = "com.bottlerocketstudios"
+version = "1.2.4"
+
+project.ext.artifactory_artifactid = "vault"
+project.ext.artifactory_packaging = "jar"
+project.ext.artifactory_description = "BRVault is an encrypted vault for storing sensitive information"
+project.ext.artifactory_project_url = "https://github.com/BottleRocketApps/Android-Vault"
+project.ext.artifactory_name = "br-android-vault"
+project.ext.artifactory_vcs_url = "https://github.com/BottleRocketApps/Android-Vault"
+
+project.ext.bundle_name = "vault"
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
+
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 23
+        versionCode 1
+        versionName project.version
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+}
+
+android.libraryVariants.all { variant ->
+    def name = variant.buildType.name
+    def task = project.tasks.create(name: "jar${name.capitalize()}", type: Jar) {
+        dependsOn variant.javaCompile
+        from variant.javaCompile.destinationDir
+        from (new File(project.rootDir.parentFile, "LICENSE.txt"), {into "META-INF"})
+        from (new File(project.rootDir.parentFile, "NOTICE.txt"), {into "META-INF"})
+
+        manifest {
+            attributes(
+                    "Bundle-Name": project.ext.bundle_name,
+                    "Bundle-Version": android.defaultConfig.versionName
+            )
+        }
+
+        /*
+         * Remove AAR archive to prevent upload of .aar file and implicit dependency on
+         * bundle[Release/Debug] task by uploadArchives to fulfil it.
+         */
+        configurations.archives.artifacts.removeAll { it.file.name.endsWith(".aar") }
+
+        exclude '**/R.class'
+        exclude '**/R\$*.class'
+        exclude '**/Manifest.class'
+        exclude '**/Manifest\$*.class'
+    }
+
+    if (name.equals(com.android.builder.core.BuilderConstants.RELEASE)) {
+        artifacts.add('archives', task);
+    }
+}
+
+project.ext.artifactory_credentials = "$System.env._ARTIFACTORY_CREDENTIALS"
+
+def getMavenIdentityField(field, index) {
+    //Default to global setting
+    if (project.hasProperty(field)) {
+        return project.ext[field]
+    }
+
+    //Use environment secure credential variable on Jenkins
+    def split_values = project.ext.artifactory_credentials.split(':')
+    if (split_values.size() > index && split_values[index] != null) {
+        return split_values[index]
+    }
+    logger.log(LogLevel.WARN, "Could not find maven identity field " + field)
+    return ''
+}
+
+def getMavenUser() {
+    return getMavenIdentityField('br_bintray_user', 0)
+}
+
+def getMavenPassword() {
+    return getMavenIdentityField('br_bintray_password', 1)
+}
+
+task androidJavadocs(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+    classifier = 'javadoc'
+    from androidJavadocs.destinationDir
+}
+
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.sourceFiles
+}
+
+artifacts {
+    archives androidJavadocsJar
+    archives androidSourcesJar
+}
+
+
+install {
+    repositories.mavenInstaller {
+        pom.project {
+            groupId = project.group
+            name = project.ext.artifactory_name
+            artifactId = project.ext.artifactory_artifactid
+            packaging = project.ext.artifactory_packaging
+            version = project.version
+            description = project.ext.artifactory_description
+            url = project.ext.artifactory_project_url
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Snapshots are uploaded to jfrog OSS
+ */
+artifactory {
+    contextUrl = 'https://oss.jfrog.org'
+
+    publish {
+        repository {
+            repoKey = 'oss-snapshot-local'
+
+            username = project.getMavenUser()
+            password = project.getMavenPassword()
+        }
+
+        defaults {
+            publishConfigs('archives')
+        }
+    }
+}
+
+/**
+ * Releases are uploaded to jcenter
+ */
+bintray {
+    user = project.getMavenUser();
+    key = project.getMavenPassword();
+
+    configurations = ['archives']
+
+    publish = true
+
+    pkg {
+        repo = "maven"
+        name = project.ext.artifactory_name
+        websiteUrl = project.ext.artifactory_project_url
+        vcsUrl = project.ext.artifactory_vcs_url
+        licenses = ["Apache-2.0"]
+        publish = true
+        version {
+            name = project.version
+            released = new Date()
+        }
+    }
+}
+
+//Make a single task for CI server and upload to appropriate destination based on version. 
+task uploadToMaven(dependsOn: {project.version =~ /.*-SNAPSHOT/ ? tasks['artifactoryPublish'] : tasks['bintrayUpload']}) {}
