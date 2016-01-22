@@ -42,6 +42,21 @@ Add the jcenter repository and include the library in your project with the comp
             compile 'com.bottlerocketstudios:vault:1.2.4'
         }
 
+In rare cases where you need to pull a snapshot build to help troubleshoot the develop branch, snapshots are hosted by JFrog. You should not ship a release using the snapshot library as the actual binary referenced by snapshot is going to change with every build of the develop branch. In the best case you will have irreproducible builds. In the worst case, human extinction. In some more likely middle case, you will have buggy or experimental code in your released app.
+
+         repositories {
+            ...
+            jcenter()
+            maven {
+               url "https://oss.jfrog.org/artifactory/oss-snapshot-local"
+            }
+         }
+         
+         dependencies {
+            ...
+            compile 'com.bottlerocketstudios:vault:1.2.5-SNAPSHOT'
+         }
+
 ##### Automatically Keyed
 Use automatic random keys if you need to store things like API tokens for non-user authenticated APIs or when a user password is not available or desirable to generate the initial key. 
 
