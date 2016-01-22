@@ -10,9 +10,9 @@ version = "1.2.5-SNAPSHOT"
 project.ext.artifactory_artifactid = "vault"
 project.ext.artifactory_packaging = "jar"
 project.ext.artifactory_description = "BRVault is an encrypted vault for storing sensitive information"
-project.ext.artifactory_project_url = "https://github.com/BottleRocketApps/Android-Vault"
+project.ext.artifactory_project_url = "https://github.com/BottleRocketStudios/Android-Vault"
 project.ext.artifactory_name = "br-android-vault"
-project.ext.artifactory_vcs_url = "https://github.com/BottleRocketApps/Android-Vault"
+project.ext.artifactory_vcs_url = "https://github.com/BottleRocketStudios/Android-Vault"
 
 project.ext.bundle_name = "vault"
 
