@@ -101,23 +101,6 @@ This project must be built with gradle.
     *   Build and upload: `./gradlew --refresh-dependencies clean uploadToMaven`
     *   Build only: `./gradlew --refresh-dependencies clean jarRelease`
 
-#### Build Steps
-Steps are based on using Jenkins continuous integration server. These can be performed on a *nix system by following the steps below
-
-1. Clone/Extract the repository to a build workspace
-
-1. Add the Android tools folder (in the android SDK) to your path Example:
-    
-        export ANDROID_HOME=/path/to/sdk    
-    
-1. Set your artifactory credentials using Jenkins stored credentials.
-
-        _ARTIFACTORY_CREDENTIALS=user:password
-
-1. Perform dependency refresh with build while in the project root directory.
- 
-        ./gradlew --refresh-dependencies clean uploadArchives
-
 ### Changelog
 *   1.2.4 - Open source release.
 *   1.2.3 - Key Caching.
