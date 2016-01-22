@@ -2,22 +2,22 @@ BR Vault - Android
 ============
 
 ### Purpose
-This library provides a secure storage system for private information. On devices running API 18 or later it will use the Android Keystore to wrap an encryption key. On older devices, it will obfuscate the key by combining a pre-shared secret baked into the app with random data specific to the installed instance of the application.
+This library provides a secure storage system for private information. On devices running API 18 or later it will use the Android Keystore to wrap an encryption key. On older devices, blacklisted hardware or devices which fail an initial test; it will obfuscate the key by combining a pre-shared secret baked into the app with random data specific to the installed instance of the application.
 
 This wrapped encryption key is stored in a SharedPreference file along with version information to upgrade the storage method when a user's device is upgraded across the v18 boundary. 
 
 The encryption key is used to encrypt/decrypt supplied strings into base64 values which are stored in a separate SharedPreference file if you use the StandardSharedPreferenceVault.
 
-This describes the provided behavior, but the components could be used with different storage systems. The core component, KeyStorage and the SharedPrefKeyStorage implementation can be used via the CompatSharedPrefKeyStorageFactory to retain SecretKeys for use with any cryptographic process. 
+This describes the provided behavior, but the components could be used with different storage systems. The core component, KeyStorage and the SharedPrefKeyStorage implementation can be used via the CompatSharedPrefKeyStorageFactory to retain SecretKeys for use with many cryptographic processes. 
 
 ### Components
 These components can be used independently of each other, but will be conveniently combined in an easy to use way if you use one of the associated factories. 
 
 *   SharedPreferenceVault - A place to store the secret information serialized or encoded to String format which extends the SharedPreference interface, but does not necessarily need to be backed by SharedPreferences.
-    *   SharedPreferenceVaultFactory - A factory that will produce a SecureVault backed by SharedPreference storage.
-    *   SharedPreferenceVaultRegistry - A centralized place to keep your SecureVault instances. Guarantees the required uniqueness of values used to index the stored values.
+    *   SharedPreferenceVaultFactory - A factory that will produce a SharedPreferenceVault backed by SharedPreference storage.
+    *   SharedPreferenceVaultRegistry - A centralized place to keep your SharedPreferenceVault instances. Guarantees the required uniqueness of values used to index the stored values.
     *   StandardSharedPreferenceVault - Implementation used by the factory that is backed by an actual SharedPreference file. 
-    *   StandardSharedPreferenceVaultEditor - Extends SharedPreference.Editor and maintains the same behavior.
+    *   StandardSharedPreferenceVaultEditor - Implements SharedPreference.Editor and provides the same behavior.
 *   KeyStorage - Secure method to store your SecretKey objects.
     *   CompatSharedPrefKeyStorageFactory - Self-upgrading SharedPreferences backed KeyStorage factory.
     *   SharedPrefKeyStorage - Implementation used by the factory. 
@@ -25,7 +25,6 @@ These components can be used independently of each other, but will be convenient
     *   Aes256KeyFromPasswordFactory - Creates a key for use with the AES256 cipher using a supplied password.
     *   Aes256RandomKeyFactory - Creates a key for use with the AES256 cipher using a SecureRandom source.
     *   PbkdfKeygenerator, RandomKeyGenerator, SecretKeySpecGenerator - implementations that can be used separately, but are largely for use by other components.
-
 
 ### Usage
 Add the jcenter repository and include the library in your project with the compile directive in your dependencies section of your build.gradle.
@@ -41,6 +40,21 @@ Add the jcenter repository and include the library in your project with the comp
             ...
             compile 'com.bottlerocketstudios:vault:1.2.4'
         }
+
+In rare cases where you need to pull a snapshot build to help troubleshoot the develop branch, snapshots are hosted by JFrog. You should not ship a release using the snapshot library as the actual binary referenced by snapshot is going to change with every build of the develop branch. In the best case you will have irreproducible builds. In the worst case, human extinction. In some more likely middle case, you will have buggy or experimental code in your released app.
+
+         repositories {
+            ...
+            jcenter()
+            maven {
+               url "https://oss.jfrog.org/artifactory/oss-snapshot-local"
+            }
+         }
+         
+         dependencies {
+            ...
+            compile 'com.bottlerocketstudios:vault:1.2.5-SNAPSHOT'
+         }
 
 ##### Automatically Keyed
 Use automatic random keys if you need to store things like API tokens for non-user authenticated APIs or when a user password is not available or desirable to generate the initial key. 
@@ -96,27 +110,10 @@ preference file. This is completely irreversable.
 ### Build
 This project must be built with gradle. 
 
-*   Version Numbering - The version name should end with "-SNAPSHOT" for non release builds. This will cause the resulting binary, source, and javadoc files to be uploaded to the snapshot repository in Maven as a snapshot build. Removing snapshot from the version name will cause the build to replace the latest build of the same version number on jcenter. 
+*   Version Numbering - The version name should end with "-SNAPSHOT" for non release builds. This will cause the resulting binary, source, and javadoc files to be uploaded to the snapshot repository in Maven as a snapshot build. Removing snapshot from the version name will publish the build on jcenter. If that version is already published, it will not overwrite it.
 *   Execution - To build this libarary, associated tasks are dynamically generated by Android build tools in conjunction with Gradle. Example command for the production flavor of the release build type: 
     *   Build and upload: `./gradlew --refresh-dependencies clean uploadToMaven`
     *   Build only: `./gradlew --refresh-dependencies clean jarRelease`
-
-#### Build Steps
-Steps are based on using Jenkins continuous integration server. These can be performed on a *nix system by following the steps below
-
-1. Clone/Extract the repository to a build workspace
-
-1. Add the Android tools folder (in the android SDK) to your path Example:
-    
-        export ANDROID_HOME=/path/to/sdk    
-    
-1. Set your artifactory credentials using Jenkins stored credentials.
-
-        _ARTIFACTORY_CREDENTIALS=user:password
-
-1. Perform dependency refresh with build while in the project root directory.
- 
-        ./gradlew --refresh-dependencies clean uploadArchives
 
 ### Changelog
 *   1.2.4 - Open source release.
