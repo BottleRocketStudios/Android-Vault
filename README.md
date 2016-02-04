@@ -60,7 +60,7 @@ In rare cases where you need to pull a snapshot build to help troubleshoot the d
 Use automatic random keys if you need to store things like API tokens for non-user authenticated APIs or when a user password is not available or desirable to generate the initial key. 
 
         //Create an automatically keyed vault
-        SecureVault secureVault = SharedPreferenceVaultFactory.getAppKeyedCompatAes256Vault(
+        SharedPreferenceVault secureVault = SharedPreferenceVaultFactory.getAppKeyedCompatAes256Vault(
                 context,
                 PREF_FILE_NAME,     //Preference file name to store content
                 KEY_FILE_NAME,      //Preference file to store key material
@@ -78,12 +78,12 @@ Use automatic random keys if you need to store things like API tokens for non-us
         ...
         //They logged out or you want to clear it for some reason later
         SecretKey secretKey = Aes256RandomKeyFactory.createKey();
-        SharedPrefereneVaultRegistry.getInstance().getVault(VAULT_ID).rekeyStorage(secretKey);
-        
+        SharedPreferenceVaultRegistry.getInstance().getVault(VAULT_ID).rekeyStorage(secretKey);
+
 ##### Manually Keyed
 When the key is derived from some external source you can create the keystore then rekey it later. This is typically going to be the case if you want to base the key on a user supplied password.
 
-        SecureVault secureVault = SharedPreferenceVaultFactory.getCompatAes256Vault(
+        SharedPreferenceVault secureVault = SharedPreferenceVaultFactory.getCompatAes256Vault(
                 context,
                 PREF_FILE_NAME,
                 KEY_FILE_NAME,
@@ -101,8 +101,8 @@ When the key is derived from some external source you can create the keystore th
         //Later when you have the password, create a key using 10000 PKDBF iterations
         //Avoid doing this on the UI thread, it is designed to be CPU intensive. 
         SecretKey secretKey = Aes256KeyFromPasswordFactory.createKey("password", 10000);
-        SharedPrefereneVaultRegistry.getInstance().getVault(VAULT_ID).rekeyStorage(secretKey);
-        
+        SharedPreferenceVaultRegistry.getInstance().getVault(VAULT_ID).rekeyStorage(secretKey);
+
 ##### Rekeying
 The vault can be rekeyed at any time. This will delete all values in the shared 
 preference file. This is completely irreversable. 
