@@ -105,7 +105,7 @@ When the key is derived from some external source you can create the keystore th
 
 ##### Rekeying
 The vault can be rekeyed at any time. This will delete all values in the shared 
-preference file. This is completely irreversable. 
+preference file. This is completely irreversible.
 
 ### Build
 This project must be built with gradle. 
