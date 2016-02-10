@@ -24,6 +24,8 @@ import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
+import com.bottlerocketstudios.vault.EncryptionConstants;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
@@ -49,7 +51,6 @@ import javax.security.auth.x500.X500Principal;
  */
 public class AndroidKeystoreSecretKeyWrapper implements SecretKeyWrapper {
     public static final String TRANSFORMATION = "RSA/ECB/PKCS1Padding";
-    public static final String ANDROID_KEY_STORE = "AndroidKeyStore";
     public static final String ALGORITHM = "RSA";
     public static final int CERTIFICATE_LIFE_YEARS = 100;
 
@@ -73,7 +74,7 @@ public class AndroidKeystoreSecretKeyWrapper implements SecretKeyWrapper {
     private KeyPair getKeyPair() throws GeneralSecurityException, IOException {
         synchronized (mAlias) {
             if (mKeyPair == null) {
-                final KeyStore keyStore = KeyStore.getInstance(ANDROID_KEY_STORE);
+                final KeyStore keyStore = KeyStore.getInstance(EncryptionConstants.ANDROID_KEY_STORE);
                 keyStore.load(null);
                 if (!keyStore.containsAlias(mAlias)) {
                     generateKeyPair(mContext, mAlias);
@@ -93,7 +94,7 @@ public class AndroidKeystoreSecretKeyWrapper implements SecretKeyWrapper {
         final Calendar end = new GregorianCalendar();
         end.add(Calendar.YEAR, CERTIFICATE_LIFE_YEARS);
         final AlgorithmParameterSpec algorithmParameterSpec = getVersionAppropriateAlgorithmParameterSpec(context, alias, start, end, BigInteger.ONE, new X500Principal("CN=" + alias));
-        final KeyPairGenerator gen = KeyPairGenerator.getInstance(ALGORITHM, ANDROID_KEY_STORE);
+        final KeyPairGenerator gen = KeyPairGenerator.getInstance(ALGORITHM, EncryptionConstants.ANDROID_KEY_STORE);
         gen.initialize(algorithmParameterSpec);
         gen.generateKeyPair();
     }
@@ -149,7 +150,7 @@ public class AndroidKeystoreSecretKeyWrapper implements SecretKeyWrapper {
     @Override
     public synchronized void clearKey(Context context) throws GeneralSecurityException, IOException {
         mKeyPair = null;
-        final KeyStore keyStore = KeyStore.getInstance(ANDROID_KEY_STORE);
+        final KeyStore keyStore = KeyStore.getInstance(EncryptionConstants.ANDROID_KEY_STORE);
         keyStore.load(null);
         keyStore.deleteEntry(mAlias);
     }

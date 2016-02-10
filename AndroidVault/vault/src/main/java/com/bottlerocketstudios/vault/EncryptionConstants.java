@@ -20,8 +20,20 @@ package com.bottlerocketstudios.vault;
  */
 public class EncryptionConstants {
     public static final String AES_CIPHER = "AES";
-    public static final String AES_CBC_PADDED_TRANSFORM = "AES/CBC/PKCS5Padding";
+    public static final String BLOCK_MODE_CBC = "CBC";
+    public static final String ENCRYPTION_PADDING_PKCS5 = "PKCS5Padding";
+    public static final String ENCRYPTION_PADDING_PKCS7 = "PKCS7Padding";
+
+    /**
+      * While this specifies PKCS5Padding and a 256 bit key, a historical artifact in the Sun encryption
+      * implementation interprets PKCS5 to be PKCS7 for block sizes over 8 bytes. In Android M this
+      * appears to have been corrected so that PKCS7Padding will work when instantiating a Cipher object.
+      */
+    public static final String AES_CBC_PADDED_TRANSFORM = AES_CIPHER + "/" + BLOCK_MODE_CBC + "/" + ENCRYPTION_PADDING_PKCS5;
+    public static final String AES_CBC_PADDED_TRANSFORM_ANDROID_M = AES_CIPHER + "/" + BLOCK_MODE_CBC + "/" + ENCRYPTION_PADDING_PKCS7;
     public static final int AES_256_KEY_LENGTH_BITS = 256;
 
     public static final String DIGEST_SHA256 = "SHA256";
+
+    public static final String ANDROID_KEY_STORE = "AndroidKeyStore";
 }
