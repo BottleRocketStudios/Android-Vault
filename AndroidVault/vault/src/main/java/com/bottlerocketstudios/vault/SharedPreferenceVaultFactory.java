@@ -15,6 +15,7 @@
 
 package com.bottlerocketstudios.vault;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.text.TextUtils;
@@ -22,6 +23,7 @@ import android.text.TextUtils;
 import com.bottlerocketstudios.vault.keys.generator.Aes256RandomKeyFactory;
 import com.bottlerocketstudios.vault.keys.storage.CompatSharedPrefKeyStorageFactory;
 import com.bottlerocketstudios.vault.keys.storage.KeyStorage;
+import com.bottlerocketstudios.vault.keys.storage.KeychainAuthenticatedKeyStorage;
 import com.bottlerocketstudios.vault.salt.PrngSaltGenerator;
 
 import java.security.GeneralSecurityException;
@@ -79,6 +81,28 @@ public class SharedPreferenceVaultFactory {
         SharedPreferenceVault sharedPreferenceVault = getCompatAes256Vault(context, prefFileName, keyFileName, keyAlias, keyIndex, presharedSecret);
         if (!sharedPreferenceVault.isKeyAvailable()) {
             sharedPreferenceVault.rekeyStorage(Aes256RandomKeyFactory.createKey());
+        }
+        return sharedPreferenceVault;
+    }
+
+    /**
+     * Create a vault that uses the operating system's built in keystore locking mechanism. Whenever
+     * the device has not been unlocked in a specified amount of time, reading from this vault will
+     * throw a {@link android.security.keystore.KeyPermanentlyInvalidatedException} or {@link android.security.keystore.UserNotAuthenticatedException}.
+     *
+     * @param context                Application context.
+     * @param prefFileName           Preference file name to be used for storage of data.
+     * @param keyAlias               Alias of Keystore key, must be unique within application.
+     * @param authDurationSeconds    Time in seconds to allow use of the key without requiring authentication.
+     * @throws GeneralSecurityException
+     */
+    @TargetApi(Build.VERSION_CODES.M)
+    public static SharedPreferenceVault getKeychainAuthenticatedAes256Vault(Context context, String prefFileName, String keyAlias, int authDurationSeconds) throws GeneralSecurityException {
+        KeyStorage keyStorage = new KeychainAuthenticatedKeyStorage(keyAlias, EncryptionConstants.AES_CIPHER, EncryptionConstants.BLOCK_MODE_CBC, EncryptionConstants.ENCRYPTION_PADDING_PKCS7, authDurationSeconds);
+
+        SharedPreferenceVault sharedPreferenceVault = new StandardSharedPreferenceVault(context, keyStorage, prefFileName, EncryptionConstants.AES_CBC_PADDED_TRANSFORM_ANDROID_M);
+        if (!sharedPreferenceVault.isKeyAvailable()) {
+            sharedPreferenceVault.rekeyStorage(null);
         }
         return sharedPreferenceVault;
     }
