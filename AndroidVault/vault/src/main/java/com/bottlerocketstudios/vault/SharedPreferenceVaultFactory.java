@@ -25,9 +25,12 @@ import com.bottlerocketstudios.vault.keys.generator.Aes256RandomKeyFactory;
 import com.bottlerocketstudios.vault.keys.storage.CompatSharedPrefKeyStorageFactory;
 import com.bottlerocketstudios.vault.keys.storage.KeyStorage;
 import com.bottlerocketstudios.vault.keys.storage.KeychainAuthenticatedKeyStorage;
+import com.bottlerocketstudios.vault.keys.storage.MemoryOnlyKeyStorage;
 import com.bottlerocketstudios.vault.salt.PrngSaltGenerator;
 
 import java.security.GeneralSecurityException;
+
+import javax.crypto.SecretKey;
 
 
 /**
@@ -130,4 +133,18 @@ public class SharedPreferenceVaultFactory {
         return keyguardManager.isKeyguardSecure();
     }
 
+    /**
+     * Create a vault that will not persist the key to any secure storage system. The key is kept in
+     * memory only and can be unset with {@link SharedPreferenceVault#rekeyStorage(SecretKey)} with a null SecretKey.
+     * Check {@link SharedPreferenceVault#isKeyAvailable()} before attempting to read or write information.
+     *
+     * @param context           Application context
+     * @param prefFileName      Preference file name to be used for storage of key and data
+     * @param enableExceptions  Allow wrapping and rethrowing of checked exceptions as RuntimeExceptions to maintain compatibility with SharedPreference Interface.
+     * @throws GeneralSecurityException
+     */
+    public static SharedPreferenceVault getMemoryOnlyKeyAes256Vault(Context context, String prefFileName, boolean enableExceptions) throws GeneralSecurityException {
+        KeyStorage keyStorage = new MemoryOnlyKeyStorage();
+        return new StandardSharedPreferenceVault(context, keyStorage, prefFileName, EncryptionConstants.AES_CBC_PADDED_TRANSFORM, enableExceptions);
+    }
 }

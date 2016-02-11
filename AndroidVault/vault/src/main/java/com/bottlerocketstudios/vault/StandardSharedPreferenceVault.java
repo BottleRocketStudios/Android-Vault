@@ -321,6 +321,11 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
     @Override
     public void rekeyStorage(SecretKey secretKey) {
         clearStorage();
+        setKey(secretKey);
+    }
+
+    @Override
+    public void setKey(SecretKey secretKey) {
         mKeyStorage.saveKey(mContext, secretKey);
     }
 

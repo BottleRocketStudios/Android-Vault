@@ -37,6 +37,14 @@ public interface SharedPreferenceVault extends SharedPreferences {
     void rekeyStorage(SecretKey secretKey);
 
     /**
+     * Arbitrarily set the secret key to a specific value without removing any stored values. This is primarily
+     * designed for {@link com.bottlerocketstudios.vault.keys.storage.MemoryOnlyKeyStorage} and typical
+     * usage would be through the {@link #rekeyStorage(SecretKey)} method.
+     * <strong>If this key is not the right key, existing data may become permanently unreadable.</strong>
+     */
+    void setKey(SecretKey secretKey);
+
+    /**
      * Determine if this instance of storage currently has a valid key with which to encrypt values.
      */
     boolean isKeyAvailable();
