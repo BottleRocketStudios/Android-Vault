@@ -64,7 +64,7 @@ public class KeychainAuthenticatedKeyStorage implements KeyStorage {
         SecretKey secretKey = null;
         synchronized (mKeyLock) {
             try {
-                KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+                KeyStore keyStore = KeyStore.getInstance(EncryptionConstants.ANDROID_KEY_STORE);
                 keyStore.load(null);
                 secretKey = (SecretKey) keyStore.getKey(mKeyAlias, null);
             } catch (KeyStoreException e) {

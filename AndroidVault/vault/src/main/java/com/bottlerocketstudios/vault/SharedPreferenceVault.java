@@ -23,12 +23,6 @@ import javax.crypto.SecretKey;
  * Shared Preferences backed vault for storing sensitive information.
  */
 public interface SharedPreferenceVault extends SharedPreferences {
-
-    /**
-     * Read the value corresponding to the provided key or return defaultValue on failure.
-     */
-    String getString(String key, String defaultValue);
-
     /**
      * Remove all stored values and destroy cryptographic keys associated with the vault instance.
      * <strong>This will permanently destroy all data in the preference file.</strong>
@@ -46,4 +40,14 @@ public interface SharedPreferenceVault extends SharedPreferences {
      * Determine if this instance of storage currently has a valid key with which to encrypt values.
      */
     boolean isKeyAvailable();
+
+    /**
+     * Enable or disable logging operations.
+     */
+    void setDebugEnabled(boolean enabled);
+
+    /**
+     * Determine if logging is enabled.
+     */
+    boolean isDebugEnabled();
 }
