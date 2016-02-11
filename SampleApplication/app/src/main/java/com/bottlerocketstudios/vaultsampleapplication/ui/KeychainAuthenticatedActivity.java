@@ -6,13 +6,9 @@ import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Bundle;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.UserNotAuthenticatedException;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.View;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import com.bottlerocketstudios.vault.SharedPreferenceVault;
@@ -20,31 +16,12 @@ import com.bottlerocketstudios.vault.SharedPreferenceVaultFactory;
 import com.bottlerocketstudios.vaultsampleapplication.R;
 import com.bottlerocketstudios.vaultsampleapplication.vault.VaultLocator;
 
-/**
- * Created by adam.newman on 2/10/16.
- */
-public class KeychainAuthenticatedActivity extends AppCompatActivity {
+public class KeychainAuthenticatedActivity extends BaseSecretActivity {
     private static final String TAG = KeychainAuthenticatedActivity.class.getSimpleName();
 
-    private static final String PREF_SECRET = "theSecret";
-
-    private static final int REQUEST_CODE_CONFIRM_FOR_LOAD = 123;
-    private static final int REQUEST_CODE_CONFIRM_FOR_SAVE = 124;
-
-
-    private EditText mSecretText;
 
     public static Intent createLaunchIntent(Context context) {
         return new Intent(context, KeychainAuthenticatedActivity.class);
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.keychain_authenticated_activity);
-        mSecretText = (EditText) findViewById(R.id.secret_text);
-        wireClick(R.id.load_secret, mClickListener);
-        wireClick(R.id.save_secret, mClickListener);
     }
 
     @Override
@@ -59,59 +36,18 @@ public class KeychainAuthenticatedActivity extends AppCompatActivity {
         }
     }
 
-    private void wireClick(int viewId, View.OnClickListener clickListener) {
-        findViewById(viewId).setOnClickListener(clickListener);
+    @Override
+    protected int getContentViewLayoutId() {
+        return R.layout.secret_only_activity;
     }
 
-    private View.OnClickListener mClickListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            switch (view.getId()) {
-                case R.id.load_secret:
-                    loadSecret();
-                    break;
-                case R.id.save_secret:
-                    saveSecret();
-                    break;
-            }
-        }
-    };
-
-    private void loadSecret() {
-        final SharedPreferenceVault sharedPreferenceVault = VaultLocator.getKeychainAuthenticatedVault(this);
-        if (sharedPreferenceVault != null) {
-            String secretValue = null;
-            try {
-                secretValue = sharedPreferenceVault.getString(PREF_SECRET, null);
-            } catch (RuntimeException e) {
-                if (!handleRuntimeException(sharedPreferenceVault, REQUEST_CODE_CONFIRM_FOR_LOAD, e.getCause())) {
-                    Log.e(TAG, "Failed to handle exception", e);
-                }
-            }
-            if (secretValue != null) {
-                mSecretText.setText(secretValue);
-            } else {
-                mSecretText.setText("");
-            }
-        }
+    @Override
+    protected SharedPreferenceVault getVault() {
+        return VaultLocator.getKeychainAuthenticatedVault(this);
     }
 
-    private void saveSecret() {
-        String secretValue = mSecretText.getText().toString();
-
-        final SharedPreferenceVault sharedPreferenceVault = VaultLocator.getKeychainAuthenticatedVault(this);
-        if (sharedPreferenceVault != null) {
-            try {
-                sharedPreferenceVault.edit().putString(PREF_SECRET, secretValue).apply();
-            } catch (RuntimeException e) {
-                if (!handleRuntimeException(sharedPreferenceVault, REQUEST_CODE_CONFIRM_FOR_SAVE, e.getCause())) {
-                    Log.e(TAG, "Failed to handle exception", e);
-                }
-            }
-        }
-    }
-
-    private boolean handleRuntimeException(SharedPreferenceVault sharedPreferenceVault, int requestCode, Throwable throwable) {
+    @Override
+    protected boolean handleRuntimeException(SharedPreferenceVault sharedPreferenceVault, int requestCode, Throwable throwable) {
         boolean handled = false;
         if (throwable instanceof UserNotAuthenticatedException) {
             Log.w(TAG, "User authentication expired");
@@ -145,10 +81,10 @@ public class KeychainAuthenticatedActivity extends AppCompatActivity {
 
     private void completeOperationForRequestCode(int requestCode) {
         switch (requestCode) {
-            case REQUEST_CODE_CONFIRM_FOR_LOAD:
+            case REQUEST_CODE_FIX_LOAD:
                 loadSecret();
                 break;
-            case REQUEST_CODE_CONFIRM_FOR_SAVE:
+            case REQUEST_CODE_FIX_SAVE:
                 saveSecret();
                 break;
         }

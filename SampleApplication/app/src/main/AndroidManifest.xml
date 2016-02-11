@@ -16,7 +16,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ui.KeychainAuthenticatedActivity" />
+        <activity android:name=".ui.KeychainAuthenticatedActivity"/>
+        <activity android:name=".ui.AutomaticallyKeyedActivity"/>
+        <activity android:name=".ui.ManuallyKeyedActivity"/>
+        <activity android:name=".ui.PbkdfActivity"/>
     </application>
 
 </manifest>

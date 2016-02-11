@@ -7,4 +7,11 @@
     <string name="please_login_title">Please login again</string>
     <string name="please_login_message">Your device has been unlocked for too long. Please unlock it again.</string>
     <string name="api_23_error">This feature requires API 23 or higher</string>
+    <string name="pbkdf_required_vault">Password Required Vault</string>
+    <string name="load_secret">Load Secret</string>
+    <string name="save_secret">Save Secret</string>
+    <string name="enter_password">Enter Password</string>
+    <string name="set_password">Set Password</string>
+    <string name="clear_password">Clear Password</string>
+    <string name="enter_secret">Enter Secret</string>
 </resources>
