@@ -40,9 +40,7 @@ public abstract class BasePasswordActivity extends BaseSecretActivity {
         }
     };
 
-    protected void clearPassword() {
-        getVault().rekeyStorage(null);
-    }
+    protected abstract void clearPassword();
 
     protected abstract void setPassword();
 

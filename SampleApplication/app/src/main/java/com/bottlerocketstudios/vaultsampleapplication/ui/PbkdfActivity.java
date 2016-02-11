@@ -25,6 +25,11 @@ public class PbkdfActivity extends BasePasswordActivity {
         return VaultLocator.getPbkdfVault();
     }
 
+    @Override
+    protected void clearPassword() {
+        getVault().setKey(null);
+    }
+
     protected void setPassword() {
         new GeneratePasswordBasedKey(getVault(), VaultLocator.getPbkdfVaultSaltGenerator(this), this).execute(getPasswordText());
     }

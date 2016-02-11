@@ -24,6 +24,10 @@ public class ManuallyKeyedActivity extends BasePasswordActivity {
         return VaultLocator.getManuallyKeyedVault();
     }
 
+    protected void clearPassword() {
+        getVault().rekeyStorage(null);
+    }
+
     protected void setPassword() {
         new GeneratePasswordBasedKey(getVault(), this).execute(getPasswordText());
     }
