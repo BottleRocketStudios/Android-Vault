@@ -13,11 +13,11 @@ import java.lang.ref.WeakReference;
 
 import javax.crypto.SecretKey;
 
-public class PbkdfActivity extends BasePasswordActivity {
+public class PasswordRequiredActivity extends BasePasswordActivity {
     private static final int PBKDF_ITERATIONS = 10000;
 
     public static Intent createLaunchIntent(Context context) {
-        return new Intent(context, PbkdfActivity.class);
+        return new Intent(context, PasswordRequiredActivity.class);
     }
 
     @Override

@@ -8,7 +8,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:name=".KeystoreApplication">
+        android:name=".VaultSampleApplication">
         <activity android:name=".ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -19,7 +19,7 @@
         <activity android:name=".ui.KeychainAuthenticatedActivity"/>
         <activity android:name=".ui.AutomaticallyKeyedActivity"/>
         <activity android:name=".ui.ManuallyKeyedActivity"/>
-        <activity android:name=".ui.PbkdfActivity"/>
+        <activity android:name=".ui.PasswordRequiredActivity"/>
     </application>
 
 </manifest>

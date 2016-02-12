@@ -1,6 +1,5 @@
 package com.bottlerocketstudios.vaultsampleapplication.ui;
 
-import android.content.Intent;
 import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,7 +17,7 @@ public class MainActivity extends AppCompatActivity {
         wireClick(R.id.keychain_authenticated_vault, mClickListener);
         wireClick(R.id.manually_keyed_vault, mClickListener);
         wireClick(R.id.automatically_keyed_vault, mClickListener);
-        wireClick(R.id.pbkdf_required_vault, mClickListener);
+        wireClick(R.id.password_required_vault, mClickListener);
     }
 
     private void wireClick(int viewId, View.OnClickListener clickListener) {
@@ -35,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
                 case R.id.automatically_keyed_vault:
                     launchAutomaticallyKeyedVault();
                     break;
-                case R.id.pbkdf_required_vault:
+                case R.id.password_required_vault:
                     launchPbkdfRequiredVault();
                     break;
                 case R.id.manually_keyed_vault:
@@ -50,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void launchPbkdfRequiredVault() {
-        startActivity(PbkdfActivity.createLaunchIntent(this));
+        startActivity(PasswordRequiredActivity.createLaunchIntent(this));
     }
 
     private void launchAutomaticallyKeyedVault() {

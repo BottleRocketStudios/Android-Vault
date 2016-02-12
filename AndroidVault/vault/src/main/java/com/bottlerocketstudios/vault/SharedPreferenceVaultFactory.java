@@ -135,7 +135,7 @@ public class SharedPreferenceVaultFactory {
 
     /**
      * Create a vault that will not persist the key to any secure storage system. The key is kept in
-     * memory only and can be unset with {@link SharedPreferenceVault#rekeyStorage(SecretKey)} with a null SecretKey.
+     * memory only and can be unset with {@link SharedPreferenceVault#setKey(SecretKey)}  with a null SecretKey.
      * Check {@link SharedPreferenceVault#isKeyAvailable()} before attempting to read or write information.
      *
      * @param context           Application context

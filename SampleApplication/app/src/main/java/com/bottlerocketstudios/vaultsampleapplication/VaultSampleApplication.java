@@ -4,7 +4,7 @@ import android.app.Application;
 
 import com.bottlerocketstudios.vaultsampleapplication.vault.VaultLocator;
 
-public class KeystoreApplication extends Application {
+public class VaultSampleApplication extends Application {
 
     @Override
     public void onCreate() {

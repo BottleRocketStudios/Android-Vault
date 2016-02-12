@@ -115,6 +115,7 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
                 } catch (GeneralSecurityException | UnsupportedEncodingException e) {
                     log("Exception in writeValues()", e);
                     if (mEnableExceptions) throw new RuntimeException(e);
+                    return false;
                 }
             } else {
                 return false;
