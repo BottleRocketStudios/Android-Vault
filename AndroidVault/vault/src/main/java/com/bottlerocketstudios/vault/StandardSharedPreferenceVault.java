@@ -22,7 +22,10 @@ import android.util.Log;
 
 import com.bottlerocketstudios.vault.keys.storage.KeyStorage;
 
+import java.io.UnsupportedEncodingException;
+import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,18 +50,21 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
     private static final Pattern BOOLEAN_REGEX = Pattern.compile("^(true|false)$");
 
     private final Context mContext;
-    private String mTransform;
-    private KeyStorage mKeyStorage;
+    private final boolean mEnableExceptions;
+    private final String mTransform;
+    private final KeyStorage mKeyStorage;
+    private final String mSharedPreferenceName;
+    private final List<OnSharedPreferenceChangeListener> mSharedPreferenceChangeListenerList = Collections.synchronizedList(new LinkedList<OnSharedPreferenceChangeListener>());
 
-    private String mSharedPreferenceName;
     private SharedPreferences mSharedPreferences;
-    private List<OnSharedPreferenceChangeListener> mSharedPreferenceChangeListenerList = new LinkedList<>();
+    private boolean mDebugEnabled;
 
-    public StandardSharedPreferenceVault(Context context, KeyStorage keyStorage, String prefFileName, String transform) {
+    public StandardSharedPreferenceVault(Context context, KeyStorage keyStorage, String prefFileName, String transform, boolean enableExceptions) {
         mContext = context.getApplicationContext();
         mKeyStorage = keyStorage;
         mSharedPreferenceName = prefFileName;
         mTransform = transform;
+        mEnableExceptions = enableExceptions;
     }
 
     boolean writeValues(boolean commit, boolean wasCleared, Set<String> removalSet, StronglyTypedBundle stronglyTypedBundle) {
@@ -80,30 +86,36 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
             //Secret key is kept in memory only long enough to use it.
             SecretKey secretKey = mKeyStorage.loadKey(mContext);
             if (secretKey != null) {
-                for(String key: stronglyTypedBundle.keySet()) {
-                    Class type = stronglyTypedBundle.getTypeForValue(key);
-                    if (type == String.class) {
-                        writeString(editor, key, secretKey, stronglyTypedBundle.getValue(String.class, key));
-                    } else if (type == Long.class) {
-                        writeLong(editor, key, secretKey, stronglyTypedBundle.getValue(Long.class, key));
-                    } else if (type == Integer.class) {
-                        writeInteger(editor, key, secretKey, stronglyTypedBundle.getValue(Integer.class, key));
-                    } else if (type == Float.class) {
-                        writeFloat(editor, key, secretKey, stronglyTypedBundle.getValue(Float.class, key));
-                    } else if (type == Boolean.class) {
-                        writeBoolean(editor, key, secretKey, stronglyTypedBundle.getValue(Boolean.class, key));
-                    } else if (Set.class.isAssignableFrom(type)) {
-                        try {
-                            //noinspection unchecked
-                            writeStringSet(editor, key, secretKey, stronglyTypedBundle.getValue(Set.class, key));
-                        } catch (ClassCastException e) {
-                            Log.e(TAG, "Unexpected type of set provided", e);
+                try {
+                    for (String key : stronglyTypedBundle.keySet()) {
+                        Class type = stronglyTypedBundle.getTypeForValue(key);
+                        if (type == String.class) {
+                            writeString(editor, key, secretKey, stronglyTypedBundle.getValue(String.class, key));
+                        } else if (type == Long.class) {
+                            writeLong(editor, key, secretKey, stronglyTypedBundle.getValue(Long.class, key));
+                        } else if (type == Integer.class) {
+                            writeInteger(editor, key, secretKey, stronglyTypedBundle.getValue(Integer.class, key));
+                        } else if (type == Float.class) {
+                            writeFloat(editor, key, secretKey, stronglyTypedBundle.getValue(Float.class, key));
+                        } else if (type == Boolean.class) {
+                            writeBoolean(editor, key, secretKey, stronglyTypedBundle.getValue(Boolean.class, key));
+                        } else if (Set.class.isAssignableFrom(type)) {
+                            try {
+                                //noinspection unchecked
+                                writeStringSet(editor, key, secretKey, stronglyTypedBundle.getValue(Set.class, key));
+                            } catch (ClassCastException e) {
+                                log("Unexpected type of set provided", e);
+                                return false;
+                            }
+                        } else {
+                            log("Unexpected data type encountered " + type.toString());
                             return false;
                         }
-                    } else {
-                        Log.e(TAG, "Unexpected data type encountered " + type.toString());
-                        return false;
                     }
+                } catch (GeneralSecurityException | UnsupportedEncodingException e) {
+                    log("Exception in writeValues()", e);
+                    if (mEnableExceptions) throw new RuntimeException(e);
+                    return false;
                 }
             } else {
                 return false;
@@ -127,7 +139,7 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
         return commitSuccess;
     }
 
-    private void writeStringSet(Editor editor, String key, SecretKey secretKey, Set<String> value) {
+    private void writeStringSet(Editor editor, String key, SecretKey secretKey, Set<String> value) throws GeneralSecurityException, UnsupportedEncodingException {
         StringBuilder stringBuilder = new StringBuilder();
         for (Iterator<String> iterator = value.iterator(); iterator.hasNext();) {
             stringBuilder.append(iterator.next());
@@ -136,23 +148,23 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
         writeString(editor, key, secretKey, stringBuilder.toString());
     }
 
-    private void writeBoolean(Editor editor, String key, SecretKey secretKey, Boolean value) {
+    private void writeBoolean(Editor editor, String key, SecretKey secretKey, Boolean value) throws GeneralSecurityException, UnsupportedEncodingException {
         writeString(editor, key, secretKey, String.valueOf(value));
     }
 
-    private void writeFloat(Editor editor, String key, SecretKey secretKey, Float value) {
+    private void writeFloat(Editor editor, String key, SecretKey secretKey, Float value) throws GeneralSecurityException, UnsupportedEncodingException {
         writeString(editor, key, secretKey, String.valueOf(value));
     }
 
-    private void writeInteger(Editor editor, String key, SecretKey secretKey, Integer value) {
+    private void writeInteger(Editor editor, String key, SecretKey secretKey, Integer value) throws GeneralSecurityException, UnsupportedEncodingException {
         writeString(editor, key, secretKey, String.valueOf(value));
     }
 
-    private void writeLong(Editor editor, String key, SecretKey secretKey, Long value) {
+    private void writeLong(Editor editor, String key, SecretKey secretKey, Long value) throws GeneralSecurityException, UnsupportedEncodingException {
         writeString(editor, key, secretKey, String.valueOf(value));
     }
 
-    private void writeString(Editor editor, String key, SecretKey secretKey, String value) {
+    private void writeString(Editor editor, String key, SecretKey secretKey, String value) throws GeneralSecurityException, UnsupportedEncodingException {
         editor.putString(key, StringEncryptionUtils.encrypt(secretKey, value, CharacterEncodingConstants.UTF_8, mTransform));
     }
 
@@ -161,28 +173,33 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
         Map<String, Object> resultMap = new HashMap<>();
         SecretKey secretKey = mKeyStorage.loadKey(mContext);
         if (secretKey != null) {
-            SharedPreferences sharedPreferences = getSharedPreferences();
-            Map<String, ?> sourceMap = sharedPreferences.getAll();
-            for (String key : sourceMap.keySet()) {
-                String value = getString(key, null, secretKey);
-                if (value != null) {
-                    if (FLOAT_REGEX.matcher(value).matches()) {
-                        resultMap.put(key, Float.valueOf(value));
-                    } else if (INTEGER_REGEX.matcher(value).matches()) {
-                        Long longValue = Long.valueOf(value);
-                        if (longValue <= Integer.MAX_VALUE && longValue >= Integer.MIN_VALUE) {
-                            resultMap.put(key, longValue.intValue());
+            try {
+                SharedPreferences sharedPreferences = getSharedPreferences();
+                Map<String, ?> sourceMap = sharedPreferences.getAll();
+                for (String key : sourceMap.keySet()) {
+                    String value = getString(key, null, secretKey);
+                    if (value != null) {
+                        if (FLOAT_REGEX.matcher(value).matches()) {
+                            resultMap.put(key, Float.valueOf(value));
+                        } else if (INTEGER_REGEX.matcher(value).matches()) {
+                            Long longValue = Long.valueOf(value);
+                            if (longValue <= Integer.MAX_VALUE && longValue >= Integer.MIN_VALUE) {
+                                resultMap.put(key, longValue.intValue());
+                            } else {
+                                resultMap.put(key, longValue);
+                            }
+                        } else if (BOOLEAN_REGEX.matcher(value).matches()) {
+                            resultMap.put(key, Boolean.valueOf(value));
+                        } else if (value.contains(STRING_SET_SEPARATOR)) {
+                            resultMap.put(key, splitStringSet(value));
                         } else {
-                            resultMap.put(key, longValue);
+                            resultMap.put(key, value);
                         }
-                    } else if (BOOLEAN_REGEX.matcher(value).matches()) {
-                        resultMap.put(key, Boolean.valueOf(value));
-                    } else if (value.contains(STRING_SET_SEPARATOR)) {
-                        resultMap.put(key, splitStringSet(value));
-                    } else {
-                        resultMap.put(key, value);
                     }
                 }
+            } catch (GeneralSecurityException | UnsupportedEncodingException | StringEncryptionUtils.UnencryptedException e) {
+                log("Exception in getAll()", e);
+                if (mEnableExceptions) throw new RuntimeException(e);
             }
         }
         return resultMap;
@@ -190,19 +207,20 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
 
     @Override
     public String getString(String key, String defaultValue) {
-        //Secret key only in memory long enough to read the value.
-        return getString(key, defaultValue, mKeyStorage.loadKey(mContext));
+        try {
+            return getString(key, defaultValue, mKeyStorage.loadKey(mContext));
+        } catch (GeneralSecurityException | UnsupportedEncodingException | StringEncryptionUtils.UnencryptedException e) {
+            log("Exception in getString()", e);
+            if (mEnableExceptions) throw new RuntimeException(e);
+        }
+        return defaultValue;
     }
 
-    private String getString(String key, String defaultValue, SecretKey secretKey) {
+    private String getString(String key, String defaultValue, SecretKey secretKey) throws GeneralSecurityException, UnsupportedEncodingException, StringEncryptionUtils.UnencryptedException {
         String result = defaultValue;
         String rawValue = getSharedPreferences().getString(key, null);
         if (rawValue != null && secretKey != null) {
-            try {
-                result = StringEncryptionUtils.decrypt(secretKey, rawValue, CharacterEncodingConstants.UTF_8, mTransform);
-            } catch (StringEncryptionUtils.UnencryptedException e) {
-                Log.e(TAG, "Value for key was clear.", e);
-            }
+            result = StringEncryptionUtils.decrypt(secretKey, rawValue, CharacterEncodingConstants.UTF_8, mTransform);
         }
         return result;
     }
@@ -276,9 +294,11 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
     }
 
     private void notifyListeners(Set<String> preferenceKeySet) {
-        for (OnSharedPreferenceChangeListener listener: mSharedPreferenceChangeListenerList) {
-            for (String preferenceKey: preferenceKeySet) {
-                listener.onSharedPreferenceChanged(this, preferenceKey);
+        synchronized (mSharedPreferenceChangeListenerList) {
+            for (OnSharedPreferenceChangeListener listener : mSharedPreferenceChangeListenerList) {
+                for (String preferenceKey: preferenceKeySet) {
+                    listener.onSharedPreferenceChanged(this, preferenceKey);
+                }
             }
         }
     }
@@ -302,12 +322,35 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
     @Override
     public void rekeyStorage(SecretKey secretKey) {
         clearStorage();
+        setKey(secretKey);
+    }
+
+    @Override
+    public void setKey(SecretKey secretKey) {
         mKeyStorage.saveKey(mContext, secretKey);
     }
 
     @Override
     public boolean isKeyAvailable() {
         return mKeyStorage.hasKey(mContext);
+    }
+
+    @Override
+    public void setDebugEnabled(boolean enabled) {
+        mDebugEnabled = enabled;
+    }
+
+    @Override
+    public boolean isDebugEnabled() {
+        return mDebugEnabled;
+    }
+
+    private void log(String message) {
+        if (isDebugEnabled()) Log.e(TAG, message);
+    }
+
+    private void log(String message, Throwable e) {
+        if (isDebugEnabled()) Log.e(TAG, message, e);
     }
 
     private SharedPreferences getSharedPreferences() {

@@ -26,6 +26,7 @@ import com.bottlerocketstudios.vault.keys.generator.Aes256RandomKeyFactory;
 import java.security.GeneralSecurityException;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -53,6 +54,8 @@ public class TestVaultIntegration extends AndroidTestCase {
     private static final float TEST_FLOAT_VALUE = -2.3f;
     private static final String TEST_STRING_SET_KEY = "testStringSetKey";
     private static final Set<String> TEST_STRING_SET_VALUE;
+    private static final int LARGE_STRING_SIZE = 8192;
+    private static final String TEST_LARGE_STRING_KEY = "testLongStringKey";
 
     static {
         Set<String> stringSet = new HashSet<>();
@@ -122,10 +125,26 @@ public class TestVaultIntegration extends AndroidTestCase {
         assertNotNull("Unable to create second instance of vault", sharedPreferenceVault2);
         assertEquals("Retrieval in second vault did not work properly", TEST_STRING_VALUE, sharedPreferenceVault2.getString(TEST_STRING_KEY, null));
 
+        //Test very large string
+        final String veryLargeString = createRandomString(LARGE_STRING_SIZE);
+        sharedPreferenceVault1.edit().putString(TEST_LARGE_STRING_KEY, veryLargeString).commit();
+        assertEquals("Very long string mismatch", veryLargeString, sharedPreferenceVault1.getString(TEST_LARGE_STRING_KEY, null));
+
         //Test data clearing
         sharedPreferenceVault1.clearStorage();
         assertFalse("Key was not removed", sharedPreferenceVault1.isKeyAvailable());
         assertNull("Clear storage failed to delete data", sharedPreferenceVault1.getString(TEST_STRING_KEY, null));
+    }
+
+    private String createRandomString(int size) {
+        StringBuilder stringBuilder = new StringBuilder();
+        final String validCharacters = "0123456789abcdefghijlmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWYXZ\n\t ";
+        final int validCharacterLength = validCharacters.length();
+        Random random = new Random();
+        for (int i = 0; i < size; i++) {
+            stringBuilder.append(validCharacters.charAt(random.nextInt(validCharacterLength)));
+        }
+        return stringBuilder.toString();
     }
 
 }

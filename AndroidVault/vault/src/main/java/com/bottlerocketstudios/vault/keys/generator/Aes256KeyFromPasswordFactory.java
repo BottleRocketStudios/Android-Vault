@@ -17,6 +17,7 @@ package com.bottlerocketstudios.vault.keys.generator;
 
 import com.bottlerocketstudios.vault.EncryptionConstants;
 import com.bottlerocketstudios.vault.salt.PrngSaltGenerator;
+import com.bottlerocketstudios.vault.salt.SaltGenerator;
 
 import javax.crypto.SecretKey;
 
@@ -28,11 +29,19 @@ public class Aes256KeyFromPasswordFactory {
     public static final int SALT_SIZE_BYTES = 512;
 
     /**
-     * This will execute the key generation for the number of supplied iterations. This will block for
-     * a while depending on processor speed.
+     * This will execute the key generation for the number of supplied iterations and use a unique random salt.
+     * This will block for a while depending on processor speed.
      */
     public static SecretKey createKey(String password, int pbkdfIterations) {
-        PbkdfKeyGenerator keyGenerator = new PbkdfKeyGenerator(pbkdfIterations, EncryptionConstants.AES_256_KEY_LENGTH_BITS, new PrngSaltGenerator(), SALT_SIZE_BYTES);
+        return createKey(password, pbkdfIterations, new PrngSaltGenerator());
+    }
+
+    /**
+     * This will execute the key generation for the number of supplied iterations and use salt from the
+     * supplied source. This will block for a while depending on processor speed.
+     */
+    public static SecretKey createKey(String password, int pbkdfIterations, SaltGenerator saltGenerator) {
+        PbkdfKeyGenerator keyGenerator = new PbkdfKeyGenerator(pbkdfIterations, EncryptionConstants.AES_256_KEY_LENGTH_BITS, saltGenerator, SALT_SIZE_BYTES);
         return keyGenerator.generateKey(password);
     }
 
