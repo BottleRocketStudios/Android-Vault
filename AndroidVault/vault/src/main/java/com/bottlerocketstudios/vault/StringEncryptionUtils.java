@@ -16,12 +16,11 @@
 package com.bottlerocketstudios.vault;
 
 import android.util.Base64;
-import android.util.Log;
 import android.util.Pair;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.security.InvalidAlgorithmParameterException;
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
@@ -47,31 +46,26 @@ public class StringEncryptionUtils {
     /**
      * Generate a Base64 encoded string containing an AES encrypted version of cleartext using the provided seed to generate a key.
      */
-    public static String encrypt(SecretKey key, String clearText, String charset, String transform) {
+    public static String encrypt(SecretKey key, String clearText, String charset, String transform) throws UnsupportedEncodingException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
         if (clearText == null) return null;
-        try {
-            byte[] result = encrypt(key, clearText.getBytes(charset), transform);
-            return Base64.encodeToString(result, Base64.DEFAULT);
-        } catch (InvalidKeyException | UnsupportedEncodingException | BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException | NoSuchAlgorithmException e) {
-            if (BuildConfig.DEBUG) Log.e(TAG, "Failure", e);
-        }
-        return null;
+
+        byte[] result = encrypt(key, clearText.getBytes(charset), transform);
+        return Base64.encodeToString(result, Base64.DEFAULT);
     }
 
     /**
      * Decode a Base64 encoded string into a cleartext string using the provided key and charset.
      * @throws UnencryptedException
      */
-    public static String decrypt(SecretKey key, String encrypted, String charset, String transform) throws UnencryptedException {
+    public static String decrypt(SecretKey key, String encrypted, String charset, String transform) throws UnencryptedException, GeneralSecurityException, UnsupportedEncodingException {
         if (encrypted == null) return null;
+
         try {
             byte[] enc = Base64.decode(encrypted, Base64.DEFAULT);
             byte[] result = decrypt(key, enc, transform);
             if (result != null) {
                 return new String(result, charset);
             }
-        } catch (InvalidKeyException | InvalidAlgorithmParameterException | UnsupportedEncodingException | BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException | NoSuchAlgorithmException e) {
-            if (BuildConfig.DEBUG) Log.e(TAG, "Failure", e);
         } catch (IllegalArgumentException e) {
             throw new UnencryptedException("Encrypted String was not base64 encoded.", e);
         }
@@ -87,18 +81,15 @@ public class StringEncryptionUtils {
         return byteBuffer.array();
     }
 
-    private static Pair<byte[], byte[]> readIvFromHeader(byte[] encrypted) {
+    private static Pair<byte[], byte[]> readIvFromHeader(byte[] encrypted) throws GeneralSecurityException {
         if (encrypted == null) return null;
         ByteBuffer encryptedBuffer = ByteBuffer.wrap(encrypted);
         if (encrypted.length <= HEADER_METADATA_SIZE) {
-            if (BuildConfig.DEBUG) Log.e(TAG, "Not enough data");
-            return null;
+            throw new GeneralSecurityException("Not enough data");
         } else if (encryptedBuffer.get() != HEADER_MAGIC_NUMBER) {
-            if (BuildConfig.DEBUG) Log.e(TAG, "Not valid data");
-            return null;
+            throw new GeneralSecurityException("Invalid header");
         } else if (encryptedBuffer.get() != HEADER_VERSION) {
-            if (BuildConfig.DEBUG) Log.e(TAG, "Version mismatch");
-            return null;
+            throw new GeneralSecurityException("Incorrect header version");
         }
 
         int ivSize = encryptedBuffer.getInt();
@@ -123,7 +114,7 @@ public class StringEncryptionUtils {
         return concatByteArrays(header, data);
     }
 
-    private static byte[] decrypt(SecretKey key, byte[] encrypted, String transform) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+    private static byte[] decrypt(SecretKey key, byte[] encrypted, String transform) throws GeneralSecurityException {
         Cipher cipher = Cipher.getInstance(transform);
         Pair<byte[], byte[]> dataPair = readIvFromHeader(encrypted);
         if (dataPair != null) {

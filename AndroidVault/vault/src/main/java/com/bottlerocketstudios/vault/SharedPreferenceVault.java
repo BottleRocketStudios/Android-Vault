@@ -17,18 +17,14 @@ package com.bottlerocketstudios.vault;
 
 import android.content.SharedPreferences;
 
+import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
+
 import javax.crypto.SecretKey;
 
 /**
  * Shared Preferences backed vault for storing sensitive information.
  */
 public interface SharedPreferenceVault extends SharedPreferences {
-
-    /**
-     * Read the value corresponding to the provided key or return defaultValue on failure.
-     */
-    String getString(String key, String defaultValue);
-
     /**
      * Remove all stored values and destroy cryptographic keys associated with the vault instance.
      * <strong>This will permanently destroy all data in the preference file.</strong>
@@ -43,7 +39,30 @@ public interface SharedPreferenceVault extends SharedPreferences {
     void rekeyStorage(SecretKey secretKey);
 
     /**
+     * Arbitrarily set the secret key to a specific value without removing any stored values. This is primarily
+     * designed for {@link com.bottlerocketstudios.vault.keys.storage.MemoryOnlyKeyStorage} and typical
+     * usage would be through the {@link #rekeyStorage(SecretKey)} method.
+     * <strong>If this key is not the right key, existing data may become permanently unreadable.</strong>
+     */
+    void setKey(SecretKey secretKey);
+
+    /**
      * Determine if this instance of storage currently has a valid key with which to encrypt values.
      */
     boolean isKeyAvailable();
+
+    /**
+     * Enable or disable logging operations.
+     */
+    void setDebugEnabled(boolean enabled);
+
+    /**
+     * Determine if logging is enabled.
+     */
+    boolean isDebugEnabled();
+
+    /**
+     * Method to find out expected security level of KeyStorage implementation being used.
+     */
+    KeyStorageType getKeyStorageType();
 }

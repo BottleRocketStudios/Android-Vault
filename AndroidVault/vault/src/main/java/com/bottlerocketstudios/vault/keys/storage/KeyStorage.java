@@ -44,4 +44,9 @@ public interface KeyStorage {
      * Determine if key is available
      */
     boolean hasKey(Context context);
+
+    /**
+     * Return the type of key storage used.
+     */
+    KeyStorageType getKeyStorageType();
 }

@@ -27,8 +27,6 @@ import com.bottlerocketstudios.vault.salt.SaltGenerator;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.crypto.SecretKey;
 
@@ -41,11 +39,6 @@ public class CompatSharedPrefKeyStorageFactory {
 
     private static final String PREF_COMPAT_FACTORY_SDK_INT_ROOT = "compatFactorySdkInt.";
     private static final String PREF_COMPAT_FACTORY_ANDROID_KEYSTORE_TEST_STATE_ROOT = "androidKeystoreTestState.";
-
-    private static final List<String> BAD_HARDWARE_MODELS = new ArrayList<>();
-    static {
-        BAD_HARDWARE_MODELS.add("SGH-T889"); //Galaxy Note 2 nukes hardware keystore on PIN unlock.
-    }
 
     /**
      * Provided with the SDK version, create or upgrade the best version for the device.
@@ -99,7 +92,7 @@ public class CompatSharedPrefKeyStorageFactory {
     private static KeyStorage createVersionAppropriateKeyStorage(Context context, int currentSdkInt, String prefFileName, String keystoreAlias, int saltIndex, String cipherAlgorithm, String presharedSecret, SaltGenerator saltGenerator) throws GeneralSecurityException {
         SecretKeyWrapper secretKeyWrapper = null;
 
-        if (currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !isBadHardware() && canUseAndroidKeystore(context, prefFileName, keystoreAlias, currentSdkInt)) {
+        if (currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !BadHardware.isBadHardware() && canUseAndroidKeystore(context, prefFileName, keystoreAlias, currentSdkInt)) {
             secretKeyWrapper = new AndroidKeystoreSecretKeyWrapper(context, keystoreAlias);
         } else {
             secretKeyWrapper = new ObfuscatingSecretKeyWrapper(context, saltIndex, saltGenerator, presharedSecret);
@@ -177,7 +170,7 @@ public class CompatSharedPrefKeyStorageFactory {
      * @return True if the KeyStorage is crossing the barrier.
      */
     private static boolean doesRequireKeyUpgrade(int oldSdkInt, int currentSdkInt) {
-        return (oldSdkInt > 0 && oldSdkInt < currentSdkInt && oldSdkInt < Build.VERSION_CODES.JELLY_BEAN_MR2 && currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !isBadHardware());
+        return (oldSdkInt > 0 && oldSdkInt < currentSdkInt && oldSdkInt < Build.VERSION_CODES.JELLY_BEAN_MR2 && currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !BadHardware.isBadHardware());
     }
 
     /**
@@ -189,7 +182,4 @@ public class CompatSharedPrefKeyStorageFactory {
         return context.getSharedPreferences(prefFileName, Context.MODE_PRIVATE);
     }
 
-    private static boolean isBadHardware() {
-        return BAD_HARDWARE_MODELS.contains(Build.MODEL);
-    }
 }
