@@ -17,6 +17,8 @@ package com.bottlerocketstudios.vault;
 
 import android.content.SharedPreferences;
 
+import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
+
 import javax.crypto.SecretKey;
 
 /**
@@ -58,4 +60,9 @@ public interface SharedPreferenceVault extends SharedPreferences {
      * Determine if logging is enabled.
      */
     boolean isDebugEnabled();
+
+    /**
+     * Method to find out expected security level of KeyStorage implementation being used.
+     */
+    KeyStorageType getKeyStorageType();
 }

@@ -25,6 +25,7 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
 import com.bottlerocketstudios.vault.EncryptionConstants;
+import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -158,5 +159,10 @@ public class AndroidKeystoreSecretKeyWrapper implements SecretKeyWrapper {
     public boolean testKey() throws GeneralSecurityException, IOException {
         KeyPair keyPair = getKeyPair();
         return keyPair != null;
+    }
+
+    @Override
+    public KeyStorageType getKeyStorageType() {
+        return KeyStorageType.ANDROID_KEYSTORE;
     }
 }

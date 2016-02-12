@@ -23,6 +23,7 @@ import com.bottlerocketstudios.vault.EncryptionConstants;
 import com.bottlerocketstudios.vault.keys.generator.Aes256RandomKeyFactory;
 import com.bottlerocketstudios.vault.keys.storage.CompatSharedPrefKeyStorageFactory;
 import com.bottlerocketstudios.vault.keys.storage.KeyStorage;
+import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
 import com.bottlerocketstudios.vault.salt.PrngSaltGenerator;
 
 import java.security.GeneralSecurityException;
@@ -45,6 +46,7 @@ public class TestVaultUpgradePre18 extends AndroidTestCase {
         try {
             SecretKey originalKey = Aes256RandomKeyFactory.createKey();
             KeyStorage keyStorageOld = getKeyStorage(Build.VERSION_CODES.JELLY_BEAN);
+            assertEquals("Incorrect KeyStorageType", KeyStorageType.OBFUSCATED, keyStorageOld.getKeyStorageType());
             keyStorageOld.clearKey(getContext());
             keyStorageOld.saveKey(getContext(), originalKey);
 
@@ -53,11 +55,13 @@ public class TestVaultUpgradePre18 extends AndroidTestCase {
             assertTrue("Keys were not identical after creation and read from old storage", Arrays.equals(originalKey.getEncoded(), originalReadKey.getEncoded()));
 
             KeyStorage keyStorageNew = getKeyStorage(Build.VERSION_CODES.JELLY_BEAN_MR2);
+            assertEquals("Incorrect KeyStorageType", KeyStorageType.ANDROID_KEYSTORE, keyStorageNew.getKeyStorageType());
             SecretKey upgradedKey = keyStorageNew.loadKey(getContext());
             assertNotNull("Key was null after upgrade.", upgradedKey);
             assertTrue("Keys were not identical after upgrade", Arrays.equals(originalKey.getEncoded(), upgradedKey.getEncoded()));
 
             KeyStorage keyStorageRead = getKeyStorage(Build.VERSION_CODES.JELLY_BEAN_MR2);
+            assertEquals("Incorrect KeyStorageType", KeyStorageType.ANDROID_KEYSTORE, keyStorageRead.getKeyStorageType());
             SecretKey upgradedReadKey = keyStorageRead.loadKey(getContext());
             assertNotNull("Key was null after upgrade and read from storage.", upgradedReadKey);
             assertTrue("Keys were not identical after upgrade and read from storage", Arrays.equals(originalKey.getEncoded(), upgradedReadKey.getEncoded()));

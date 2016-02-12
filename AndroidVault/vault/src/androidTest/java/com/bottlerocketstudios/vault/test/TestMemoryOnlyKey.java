@@ -22,6 +22,7 @@ import android.util.Log;
 import com.bottlerocketstudios.vault.SharedPreferenceVault;
 import com.bottlerocketstudios.vault.SharedPreferenceVaultFactory;
 import com.bottlerocketstudios.vault.keys.generator.Aes256RandomKeyFactory;
+import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
 
 import java.security.GeneralSecurityException;
 
@@ -58,6 +59,7 @@ public class TestMemoryOnlyKey extends AndroidTestCase {
         sharedPreferenceVault1.setKey(testKey1);
         assertTrue("Key was not present after setting it", sharedPreferenceVault1.isKeyAvailable());
         assertNull("Rekey of storage did not clear existing value", sharedPreferenceVault1.getString(TEST_STRING_KEY, null));
+        assertEquals("Wrong type of storage", KeyStorageType.NOT_PERSISTENT, sharedPreferenceVault1.getKeyStorageType());
 
         //Store some data and verify it.
         sharedPreferenceVault1.edit().putString(TEST_STRING_KEY, TEST_STRING_VALUE).apply();

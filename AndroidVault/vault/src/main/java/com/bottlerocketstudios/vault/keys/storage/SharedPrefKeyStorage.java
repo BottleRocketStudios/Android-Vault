@@ -147,4 +147,9 @@ public class SharedPrefKeyStorage implements KeyStorage {
         SecretKey secretKey = loadKey(context);
         return secretKey != null;
     }
+
+    @Override
+    public KeyStorageType getKeyStorageType() {
+        return mSecretKeyWrapper.getKeyStorageType();
+    }
 }

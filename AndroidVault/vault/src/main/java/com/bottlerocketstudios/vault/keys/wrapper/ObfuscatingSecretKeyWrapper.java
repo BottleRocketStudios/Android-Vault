@@ -22,6 +22,7 @@ import android.util.Log;
 import com.bottlerocketstudios.vault.CharacterEncodingConstants;
 import com.bottlerocketstudios.vault.EncryptionConstants;
 import com.bottlerocketstudios.vault.keys.generator.SecretKeySpecGenerator;
+import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
 import com.bottlerocketstudios.vault.salt.SaltBox;
 import com.bottlerocketstudios.vault.salt.SaltGenerator;
 
@@ -101,6 +102,11 @@ public class ObfuscatingSecretKeyWrapper implements SecretKeyWrapper {
         mWrappingKey = null;
         mSalt = null;
         SaltBox.writeStoredBits(context, mSaltIndex, null, SALT_SIZE_BYTES);
+    }
+
+    @Override
+    public KeyStorageType getKeyStorageType() {
+        return KeyStorageType.OBFUSCATED;
     }
 
     private byte[] getSalt(Context context) {

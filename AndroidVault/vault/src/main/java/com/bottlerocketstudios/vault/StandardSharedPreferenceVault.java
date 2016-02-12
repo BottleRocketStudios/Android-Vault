@@ -21,6 +21,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.bottlerocketstudios.vault.keys.storage.KeyStorage;
+import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
 
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
@@ -343,6 +344,11 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
     @Override
     public boolean isDebugEnabled() {
         return mDebugEnabled;
+    }
+
+    @Override
+    public KeyStorageType getKeyStorageType() {
+        return mKeyStorage.getKeyStorageType();
     }
 
     private void log(String message) {

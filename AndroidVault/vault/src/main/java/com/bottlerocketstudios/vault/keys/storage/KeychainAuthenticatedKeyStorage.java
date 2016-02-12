@@ -161,4 +161,9 @@ public class KeychainAuthenticatedKeyStorage implements KeyStorage {
         }
         return false;
     }
+
+    @Override
+    public KeyStorageType getKeyStorageType() {
+        return KeyStorageType.ANDROID_KEYSTORE_AUTHENTICATED;
+    }
 }

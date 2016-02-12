@@ -17,6 +17,8 @@ package com.bottlerocketstudios.vault.keys.wrapper;
 
 import android.content.Context;
 
+import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
@@ -50,4 +52,6 @@ public interface SecretKeyWrapper {
      * @throws GeneralSecurityException
      */
     void clearKey(Context context) throws GeneralSecurityException, IOException;
+
+    public KeyStorageType getKeyStorageType();
 }

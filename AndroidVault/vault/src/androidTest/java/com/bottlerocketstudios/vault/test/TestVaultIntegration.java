@@ -22,6 +22,7 @@ import android.util.Log;
 import com.bottlerocketstudios.vault.SharedPreferenceVault;
 import com.bottlerocketstudios.vault.SharedPreferenceVaultFactory;
 import com.bottlerocketstudios.vault.keys.generator.Aes256RandomKeyFactory;
+import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
 
 import java.security.GeneralSecurityException;
 import java.util.HashSet;
@@ -76,6 +77,7 @@ public class TestVaultIntegration extends AndroidTestCase {
             assertTrue("Exception creating vault", false);
         }
         assertNotNull("Unable to create initial vault", sharedPreferenceVault1);
+        assertEquals("This test must be ran on a V18+ device with working Android Keystore support", KeyStorageType.ANDROID_KEYSTORE, sharedPreferenceVault1.getKeyStorageType());
 
         //Ensure no leftover data is restored
         sharedPreferenceVault1.rekeyStorage(Aes256RandomKeyFactory.createKey());

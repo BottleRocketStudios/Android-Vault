@@ -46,4 +46,9 @@ public class MemoryOnlyKeyStorage implements KeyStorage {
     public boolean hasKey(Context context) {
         return mSecretKey != null;
     }
+
+    @Override
+    public KeyStorageType getKeyStorageType() {
+        return KeyStorageType.NOT_PERSISTENT;
+    }
 }
