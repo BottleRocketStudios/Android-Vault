@@ -40,6 +40,7 @@ public class VaultLocator {
 
     private static final String PBKDF_PREF_FILE_NAME = "pbkdfPref";
     private static final String PBKDF_PREF_KEY_ALIAS = "pbkdfKeyed";
+    private static final String PBKDF_SALT_FILE_NAME = "pbkdfNaCl";
     private static final int PBKDF_KEY_INDEX = 4;
 
     public static boolean initializeVaults(Context context) {
@@ -140,11 +141,11 @@ public class VaultLocator {
      * </p>
      */
     public static SaltGenerator getPbkdfVaultSaltGenerator(Context context) {
-        byte[] salt = SaltBox.getStoredBits(context, PBKDF_KEY_INDEX, Aes256KeyFromPasswordFactory.SALT_SIZE_BYTES);
+        byte[] salt = SaltBox.getStoredBits(context, PBKDF_KEY_INDEX, Aes256KeyFromPasswordFactory.SALT_SIZE_BYTES, PBKDF_SALT_FILE_NAME);
         if (salt == null) {
             PrngSaltGenerator prngSaltGenerator = new PrngSaltGenerator();
             salt = prngSaltGenerator.createSaltBytes(Aes256KeyFromPasswordFactory.SALT_SIZE_BYTES);
-            SaltBox.writeStoredBits(context, PBKDF_KEY_INDEX, salt, Aes256KeyFromPasswordFactory.SALT_SIZE_BYTES);
+            SaltBox.writeStoredBits(context, PBKDF_KEY_INDEX, salt, Aes256KeyFromPasswordFactory.SALT_SIZE_BYTES, PBKDF_SALT_FILE_NAME);
         }
         return new SpecificSaltGenerator(salt);
     }
