@@ -115,7 +115,7 @@ public class CompatSharedPrefKeyStorageFactory {
             try {
                 AndroidKeystoreSecretKeyWrapper androidKeystoreSecretKeyWrapper = new AndroidKeystoreSecretKeyWrapper(context, keystoreAlias);
                 androidKeystoreTestState = androidKeystoreSecretKeyWrapper.testKey() ? AndroidKeystoreTestState.PASS : AndroidKeystoreTestState.FAIL;
-            } catch (GeneralSecurityException|IOException|IllegalStateException e) {
+            } catch (GeneralSecurityException | IOException | IllegalStateException | NullPointerException e) {
                 Log.e(TAG, "Caught an exception while creating the AndroidKeystoreSecretKeyWrapper", e);
                 androidKeystoreTestState = AndroidKeystoreTestState.FAIL;
             }
