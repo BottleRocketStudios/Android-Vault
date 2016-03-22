@@ -25,7 +25,6 @@ import com.bottlerocketstudios.vault.keys.wrapper.ObfuscatingSecretKeyWrapper;
 import com.bottlerocketstudios.vault.keys.wrapper.SecretKeyWrapper;
 import com.bottlerocketstudios.vault.salt.SaltGenerator;
 
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 import javax.crypto.SecretKey;
@@ -115,8 +114,8 @@ public class CompatSharedPrefKeyStorageFactory {
             try {
                 AndroidKeystoreSecretKeyWrapper androidKeystoreSecretKeyWrapper = new AndroidKeystoreSecretKeyWrapper(context, keystoreAlias);
                 androidKeystoreTestState = androidKeystoreSecretKeyWrapper.testKey() ? AndroidKeystoreTestState.PASS : AndroidKeystoreTestState.FAIL;
-            } catch (GeneralSecurityException | IOException | IllegalStateException | NullPointerException e) {
-                Log.e(TAG, "Caught an exception while creating the AndroidKeystoreSecretKeyWrapper", e);
+            } catch (Throwable t) {
+                Log.e(TAG, "Caught an exception while creating the AndroidKeystoreSecretKeyWrapper", t);
                 androidKeystoreTestState = AndroidKeystoreTestState.FAIL;
             }
         }
