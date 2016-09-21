@@ -27,27 +27,28 @@ import java.security.GeneralSecurityException;
  * the platform {@link java.security.KeyStore}. This allows us to protect symmetric keys with
  * hardware-backed crypto, if provided by the device.
  * <p>
- * Deprecated in favor of AndroidOaepKeystoreSecretKeyWrapper
+ * This version uses OAEP padding which is arguably more secure than PKCS1
  * </p>
  * <p>
  * See <a href="http://en.wikipedia.org/wiki/Key_Wrap">key wrapping</a> for more
  * details.
  * </p>
  */
-@Deprecated
-public class AndroidKeystoreSecretKeyWrapper extends AbstractAndroidKeystoreSecretKeyWrapper {
-    protected static final String TRANSFORMATION = "RSA/ECB/PKCS1Padding";
+public class AndroidOaepKeystoreSecretKeyWrapper extends AbstractAndroidKeystoreSecretKeyWrapper {
+    protected static final String TRANSFORMATION = "RSA/ECB/OAEPwithSHA-256andMGF1Padding";
     protected static final String[] ENCRYPTION_PADDING;
     protected static final String[] BLOCK_MODES;
-    protected static final String[] DIGESTS = {};
+    protected static final String[] DIGESTS;
 
     static {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            ENCRYPTION_PADDING = new String[] {KeyProperties.ENCRYPTION_PADDING_RSA_OAEP};
             BLOCK_MODES = new String[] {KeyProperties.BLOCK_MODE_ECB};
-            ENCRYPTION_PADDING = new String[] {KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1};
+            DIGESTS = new String[] {KeyProperties.DIGEST_SHA256};
         } else {
+            ENCRYPTION_PADDING = new String[] {"OAEPPadding"};
             BLOCK_MODES = new String[] {"ECB"};
-            ENCRYPTION_PADDING = new String[] {"PKCS1Padding"};
+            DIGESTS = new String[] {"SHA-256"};
         }
     }
 
@@ -58,7 +59,7 @@ public class AndroidKeystoreSecretKeyWrapper extends AbstractAndroidKeystoreSecr
      * @param context
      * @param alias
      */
-    public AndroidKeystoreSecretKeyWrapper(Context context, String alias) throws GeneralSecurityException {
+    public AndroidOaepKeystoreSecretKeyWrapper(Context context, String alias) throws GeneralSecurityException {
         super(context, alias);
     }
 

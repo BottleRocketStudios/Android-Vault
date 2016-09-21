@@ -20,7 +20,9 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.util.Log;
 
+import com.bottlerocketstudios.vault.keys.wrapper.AbstractAndroidKeystoreSecretKeyWrapper;
 import com.bottlerocketstudios.vault.keys.wrapper.AndroidKeystoreSecretKeyWrapper;
+import com.bottlerocketstudios.vault.keys.wrapper.AndroidOaepKeystoreSecretKeyWrapper;
 import com.bottlerocketstudios.vault.keys.wrapper.ObfuscatingSecretKeyWrapper;
 import com.bottlerocketstudios.vault.keys.wrapper.SecretKeyWrapper;
 import com.bottlerocketstudios.vault.salt.SaltGenerator;
@@ -36,8 +38,14 @@ import javax.crypto.SecretKey;
 public class CompatSharedPrefKeyStorageFactory {
     private static final String TAG = CompatSharedPrefKeyStorageFactory.class.getSimpleName();
 
+    private static final String PREF_COMPAT_FACTORY_WRAPPER_TYPE = "compatFactoryWrapperType.";
     private static final String PREF_COMPAT_FACTORY_SDK_INT_ROOT = "compatFactorySdkInt.";
     private static final String PREF_COMPAT_FACTORY_ANDROID_KEYSTORE_TEST_STATE_ROOT = "androidKeystoreTestState.";
+
+    static final int WRAPPER_TYPE_INVALID = 0;
+    static final int WRAPPER_TYPE_OBFUSCATED = 1;
+    static final int WRAPPER_TYPE_RSA_PKCS1 = 2;
+    static final int WRAPPER_TYPE_RSA_OAEP = 3;
 
     /**
      * Provided with the SDK version, create or upgrade the best version for the device.
@@ -53,13 +61,21 @@ public class CompatSharedPrefKeyStorageFactory {
      * @throws GeneralSecurityException
      */
     public static KeyStorage createKeyStorage(Context context, int currentSdkInt, String prefFileName, String keystoreAlias, int saltIndex, String cipherAlgorithm, String presharedSecret, SaltGenerator saltGenerator) throws GeneralSecurityException {
-        KeyStorage result = null;
-        int oldSdkInt = readOldSdkInt(context, prefFileName, keystoreAlias);
+        int oldWrapperType = determineCurrentWrapperType(context, prefFileName, keystoreAlias);
+        int bestSupportedWrapperType = determineBestSupportedWrapperType(context, currentSdkInt, prefFileName, keystoreAlias);
 
-        //Check to see if we have crossed an upgrade boundary and attempt to upgrade if so.
-        if (doesRequireKeyUpgrade(oldSdkInt, currentSdkInt)) {
+        return createKeyStorage(context, currentSdkInt, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator, oldWrapperType, bestSupportedWrapperType);
+    }
+
+    /*
+     * Default visibility for use when integration testing upgrade path.
+     */
+    static KeyStorage createKeyStorage(Context context, int currentSdkInt, String prefFileName, String keystoreAlias, int saltIndex, String cipherAlgorithm, String presharedSecret, SaltGenerator saltGenerator, int oldWrapperType, int newWrapperType) throws GeneralSecurityException {
+        KeyStorage result = null;
+        //If we are not using the best supported wrapper type, attempt an upgrade.
+        if (doesRequireWrapperUpgrade(oldWrapperType, newWrapperType)) {
             try {
-                result = upgradeKeyStorage(context, oldSdkInt, currentSdkInt, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
+                result = upgradeKeyWrapper(context, oldWrapperType, newWrapperType, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
             } catch (GeneralSecurityException e) {
                 Log.e(TAG, "Upgrade resulted in an exception", e);
                 result = null;
@@ -68,33 +84,87 @@ public class CompatSharedPrefKeyStorageFactory {
 
         //Upgrade failed or was unnecessary, get the latest appropriate version of the KeyStorage.
         if (result == null) {
-            result = createVersionAppropriateKeyStorage(context, currentSdkInt, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
+            result = createKeyStorageForWrapperType(context, newWrapperType, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
         }
 
-        if (result != null) writeCurrentSdkInt(context, currentSdkInt, prefFileName, keystoreAlias);
+        if (result != null) writeMetaInformation(context, prefFileName, keystoreAlias, newWrapperType, currentSdkInt);
 
         return result;
     }
 
-    private static KeyStorage upgradeKeyStorage(Context context, int oldSdkInt, int currentSdkInt, String prefFileName, String keystoreAlias, int saltIndex, String cipherAlgorithm, String presharedSecret, SaltGenerator saltGenerator) throws GeneralSecurityException {
-        KeyStorage oldKeyStorage = createVersionAppropriateKeyStorage(context, oldSdkInt, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
+    private static void writeMetaInformation(Context context, String prefFileName, String keystoreAlias, int wrapperType, int currentSdkInt) {
+        writeWrapperType(context, prefFileName, keystoreAlias, wrapperType);
+        writeCurrentSdkInt(context, prefFileName, keystoreAlias, currentSdkInt);
+    }
+
+    private static int determineCurrentWrapperType(Context context, String prefFileName, String keystoreAlias) {
+        int currentWrapperType = readWrapperType(context, prefFileName, keystoreAlias);
+        if (currentWrapperType == WRAPPER_TYPE_INVALID) {
+            currentWrapperType = determineLegacyWrapperType(context, prefFileName, keystoreAlias);
+        }
+        return currentWrapperType;
+    }
+
+    private static int determineBestSupportedWrapperType(Context context, int currentSdkInt, String prefFileName, String keystoreAlias) {
+        if (currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !BadHardware.isBadHardware() && canUseAndroidKeystore(context, prefFileName, keystoreAlias, currentSdkInt)) {
+            return WRAPPER_TYPE_RSA_OAEP;
+        }
+        return WRAPPER_TYPE_OBFUSCATED;
+    }
+
+    private static boolean doesRequireWrapperUpgrade(int oldWrapperType, int bestSupportedWrapperType) {
+        return oldWrapperType != WRAPPER_TYPE_INVALID && oldWrapperType != bestSupportedWrapperType;
+    }
+
+    private static KeyStorage upgradeKeyWrapper(Context context, int oldWrapperType, int bestSupportedWrapperType, String prefFileName, String keystoreAlias, int saltIndex, String cipherAlgorithm, String presharedSecret, SaltGenerator saltGenerator) throws GeneralSecurityException {
+        KeyStorage oldKeyStorage = createKeyStorageForWrapperType(context, oldWrapperType, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
         SecretKey secretKey = oldKeyStorage.loadKey(context);
         if (secretKey != null) {
-            KeyStorage newKeyStorage = createVersionAppropriateKeyStorage(context, currentSdkInt, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
+            oldKeyStorage.clearKey(context);
+            KeyStorage newKeyStorage = createKeyStorageForWrapperType(context, bestSupportedWrapperType, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
             if (newKeyStorage.saveKey(context, secretKey)) {
-               return newKeyStorage;
+                return newKeyStorage;
             }
         }
         return null;
     }
 
-    private static KeyStorage createVersionAppropriateKeyStorage(Context context, int currentSdkInt, String prefFileName, String keystoreAlias, int saltIndex, String cipherAlgorithm, String presharedSecret, SaltGenerator saltGenerator) throws GeneralSecurityException {
+    /**
+     * In a previous version of the library, the key wrapper types were either obfuscated or not obfuscated, but the specific type
+     * used was not stored. This method will determine which type was previously in use. It should only run on fresh installations
+     * or migrations.
+     */
+    private static int determineLegacyWrapperType(Context context, String prefFileName, String keystoreAlias) {
+        int oldSdkInt = readOldSdkInt(context, prefFileName, keystoreAlias);
+        if (oldSdkInt == 0) {
+            //This is a fresh installation.
+            return WRAPPER_TYPE_INVALID;
+        } else if (oldSdkInt > 0 && oldSdkInt < Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            //This device is too old to have used the Android Keystore.
+            return WRAPPER_TYPE_OBFUSCATED;
+        } else if (AndroidKeystoreTestState.PASS.equals(readAndroidKeystoreTestState(context, prefFileName, keystoreAlias))) {
+            //This device has a record of passing the Android Keystore test and must have been using the Android Keystore.
+            return WRAPPER_TYPE_RSA_PKCS1;
+        }
+        //This device was new enough to take the AndroidKeystore test, but failed the test.
+        return WRAPPER_TYPE_OBFUSCATED;
+    }
+
+    private static KeyStorage createKeyStorageForWrapperType(Context context, int wrapperType, String prefFileName, String keystoreAlias, int saltIndex, String cipherAlgorithm, String presharedSecret, SaltGenerator saltGenerator) throws GeneralSecurityException {
         SecretKeyWrapper secretKeyWrapper = null;
 
-        if (currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !BadHardware.isBadHardware() && canUseAndroidKeystore(context, prefFileName, keystoreAlias, currentSdkInt)) {
-            secretKeyWrapper = new AndroidKeystoreSecretKeyWrapper(context, keystoreAlias);
-        } else {
-            secretKeyWrapper = new ObfuscatingSecretKeyWrapper(context, saltIndex, saltGenerator, presharedSecret);
+        switch (wrapperType) {
+            case WRAPPER_TYPE_RSA_OAEP:
+                secretKeyWrapper = new AndroidOaepKeystoreSecretKeyWrapper(context, keystoreAlias);
+                break;
+            case WRAPPER_TYPE_RSA_PKCS1:
+                secretKeyWrapper = new AndroidKeystoreSecretKeyWrapper(context, keystoreAlias);
+                break;
+            case WRAPPER_TYPE_OBFUSCATED:
+                secretKeyWrapper = new ObfuscatingSecretKeyWrapper(context, saltIndex, saltGenerator, presharedSecret);
+                break;
+            default:
+                throw new IllegalArgumentException("Wrapper type " + wrapperType + " is invalid.");
         }
         return new SharedPrefKeyStorage(secretKeyWrapper, prefFileName, keystoreAlias, cipherAlgorithm);
     }
@@ -112,7 +182,7 @@ public class CompatSharedPrefKeyStorageFactory {
         AndroidKeystoreTestState androidKeystoreTestState = AndroidKeystoreTestState.FAIL;
         if (currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             try {
-                AndroidKeystoreSecretKeyWrapper androidKeystoreSecretKeyWrapper = new AndroidKeystoreSecretKeyWrapper(context, keystoreAlias);
+                AbstractAndroidKeystoreSecretKeyWrapper androidKeystoreSecretKeyWrapper = new AndroidOaepKeystoreSecretKeyWrapper(context, keystoreAlias);
                 androidKeystoreTestState = androidKeystoreSecretKeyWrapper.testKey() ? AndroidKeystoreTestState.PASS : AndroidKeystoreTestState.FAIL;
             } catch (Throwable t) {
                 Log.e(TAG, "Caught an exception while creating the AndroidKeystoreSecretKeyWrapper", t);
@@ -124,6 +194,21 @@ public class CompatSharedPrefKeyStorageFactory {
             Log.w(TAG, "This device failed the AndroidKeystoreSecretKeyWrapper test.");
         }
         return androidKeystoreTestState;
+    }
+
+    private static String getCurrentWrapperTypeSharedPreferenceKey(String keystoreAlias) {
+        return PREF_COMPAT_FACTORY_WRAPPER_TYPE + keystoreAlias;
+    }
+
+    private static void writeWrapperType(Context context, String prefFileName, String keystoreAlias, int wrapperType) {
+        SharedPreferences.Editor editor = getSharedPreferences(context, prefFileName).edit();
+        editor.putInt(getCurrentWrapperTypeSharedPreferenceKey(keystoreAlias), wrapperType);
+        editor.apply();
+    }
+
+    private static int readWrapperType(Context context, String prefFileName, String keystoreAlias) {
+        SharedPreferences sharedPreferences = getSharedPreferences(context, prefFileName);
+        return sharedPreferences.getInt(getCurrentWrapperTypeSharedPreferenceKey(keystoreAlias), WRAPPER_TYPE_INVALID);
     }
 
     private static String getAndroidKeystoreTestStateSharedPreferenceKey(String keystoreAlias) {
@@ -152,7 +237,7 @@ public class CompatSharedPrefKeyStorageFactory {
         return PREF_COMPAT_FACTORY_SDK_INT_ROOT + keystoreAlias;
     }
 
-    private static void writeCurrentSdkInt(Context context, int currentSdkInt, String prefFileName, String keystoreAlias) {
+    private static void writeCurrentSdkInt(Context context, String prefFileName, String keystoreAlias, int currentSdkInt) {
         SharedPreferences.Editor editor = getSharedPreferences(context, prefFileName).edit();
         editor.putInt(getCurrentSdkIntSharedPreferenceKey(keystoreAlias), currentSdkInt);
         editor.apply();
@@ -161,15 +246,6 @@ public class CompatSharedPrefKeyStorageFactory {
     private static int readOldSdkInt(Context context, String prefFileName, String keystoreAlias) {
         SharedPreferences sharedPreferences = getSharedPreferences(context, prefFileName);
         return sharedPreferences.getInt(getCurrentSdkIntSharedPreferenceKey(keystoreAlias), 0);
-    }
-
-    /**
-     * Determine if the device has just had the OS upgraded across the JELLY_BEAN_MR2 barrier.
-     *
-     * @return True if the KeyStorage is crossing the barrier.
-     */
-    private static boolean doesRequireKeyUpgrade(int oldSdkInt, int currentSdkInt) {
-        return (oldSdkInt > 0 && oldSdkInt < currentSdkInt && oldSdkInt < Build.VERSION_CODES.JELLY_BEAN_MR2 && currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !BadHardware.isBadHardware());
     }
 
     /**
