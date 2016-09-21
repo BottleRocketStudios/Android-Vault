@@ -1,5 +1,6 @@
 # Vault Changelog #
 
+*   1.4.0 - Make OAEP padding default for wrapped keys.
 *   1.3.1 - Catch any test failure
 *	1.3.0 - Lock Screen and Memory Only
 	*	Create a vault that can only be opened on API23+ devices which have been unlocked recently.
