@@ -124,7 +124,7 @@ public class CompatSharedPrefKeyStorageFactory {
     }
 
     private static boolean doesRequireWrapperUpgrade(int oldWrapperType, int bestSupportedWrapperType) {
-        return oldWrapperType != WRAPPER_TYPE_INVALID && oldWrapperType != bestSupportedWrapperType;
+        return oldWrapperType != WRAPPER_TYPE_INVALID && oldWrapperType < bestSupportedWrapperType;
     }
 
     private static KeyStorage upgradeKeyWrapper(Context context, int oldWrapperType, int bestSupportedWrapperType, String prefFileName, String keystoreAlias, int saltIndex, String cipherAlgorithm, String presharedSecret, SaltGenerator saltGenerator) throws GeneralSecurityException {
