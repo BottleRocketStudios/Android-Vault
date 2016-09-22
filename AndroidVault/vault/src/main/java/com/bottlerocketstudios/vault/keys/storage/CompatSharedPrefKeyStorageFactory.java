@@ -75,22 +75,28 @@ public class CompatSharedPrefKeyStorageFactory {
      */
     static KeyStorage createKeyStorage(Context context, int currentSdkInt, String prefFileName, String keystoreAlias, int saltIndex, String cipherAlgorithm, String presharedSecret, SaltGenerator saltGenerator, int oldWrapperType, int newWrapperType) throws GeneralSecurityException {
         KeyStorage result = null;
-        //If we are not using the best supported wrapper type, attempt an upgrade.
+
+        int wrapperType;
         if (doesRequireWrapperUpgrade(oldWrapperType, newWrapperType)) {
+            //If we are not using the best supported wrapper type, attempt an upgrade.
+            wrapperType = newWrapperType;
             try {
                 result = upgradeKeyWrapper(context, oldWrapperType, newWrapperType, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
             } catch (GeneralSecurityException e) {
                 Log.e(TAG, "Upgrade resulted in an exception", e);
                 result = null;
             }
+        } else {
+            //Upgrade isn't required, stick with the old type.
+            wrapperType = oldWrapperType;
         }
 
         //Upgrade failed or was unnecessary, get the latest appropriate version of the KeyStorage.
         if (result == null) {
-            result = createKeyStorageForWrapperType(context, newWrapperType, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
+            result = createKeyStorageForWrapperType(context, wrapperType, prefFileName, keystoreAlias, saltIndex, cipherAlgorithm, presharedSecret, saltGenerator);
         }
 
-        if (result != null) writeMetaInformation(context, prefFileName, keystoreAlias, newWrapperType, currentSdkInt);
+        if (result != null) writeMetaInformation(context, prefFileName, keystoreAlias, wrapperType, currentSdkInt);
 
         return result;
     }
