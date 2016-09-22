@@ -161,6 +161,12 @@ You can use the SharedPreferenceVault with SecretKey generated entirely from the
 The vault can be rekeyed at any time. This will delete all values in the shared 
 preference file. This is completely irreversable. 
 
+### Auditor Notes
+Automated testing tools are often built to trigger on potential cryptographic mishaps. That is fine and sunlight is often the best disinfectant, especially in crypto. That is part of why this is an open source library. However, this library will cause two irrelevant reports to occur. 
+
+*   Using an ECB block mode - Some tools will trigger if they see the letters ECB in any transform. This is not a problem because ECB is only used along with RSA to wrap a key. The short version is that a block cipher mode is a bit of a misnomer on a key wrap operation where the payload is smaller than the RSA key itself. Ultimately the RSA/ECB/PKCS1Padding transform is the only useful asymmetric transform in the Android Keystore for API 18-22, so there isn't any wiggle room here anyway.
+*   Using RSA without OAEP padding - This one isn't exactly wrong, but it cannot be avoided. Starting with version 1.4.0, the library will use PKCS1 padding on API 18-22 and upgrade to OAEP on API 23 or higher devices. This can be misunderstood because the Android platform has supported OAEP with SHA-256 since API 10, but the Android Keystore added support in API 23. 
+
 ### Build
 This project must be built with gradle. 
 
