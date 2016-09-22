@@ -27,14 +27,10 @@ import java.security.GeneralSecurityException;
  * the platform {@link java.security.KeyStore}. This allows us to protect symmetric keys with
  * hardware-backed crypto, if provided by the device.
  * <p>
- * Deprecated in favor of AndroidOaepKeystoreSecretKeyWrapper
- * </p>
- * <p>
  * See <a href="http://en.wikipedia.org/wiki/Key_Wrap">key wrapping</a> for more
  * details.
  * </p>
  */
-@Deprecated
 public class AndroidKeystoreSecretKeyWrapper extends AbstractAndroidKeystoreSecretKeyWrapper {
     protected static final String TRANSFORMATION = "RSA/ECB/PKCS1Padding";
     protected static final String[] ENCRYPTION_PADDING;

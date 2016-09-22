@@ -24,6 +24,7 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
 import com.bottlerocketstudios.vault.EncryptionConstants;
+import com.bottlerocketstudios.vault.keys.generator.Aes256RandomKeyFactory;
 import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
 
 import java.io.IOException;
@@ -33,6 +34,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
@@ -51,7 +53,6 @@ public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretK
     private final Context mContext;
     private KeyPair mKeyPair;
     private final String mAlias;
-    private String mDigests;
 
     /**
      * Create a wrapper using the public/private key pair with the given alias.
@@ -160,7 +161,14 @@ public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretK
 
     public boolean testKey() throws GeneralSecurityException, IOException {
         KeyPair keyPair = getKeyPair();
-        return keyPair != null;
+        if (keyPair == null) return false;
+
+        //Create a throwaway AES key to ensure that both wrap and unwrap operations work properly.
+        SecretKey secretKey = Aes256RandomKeyFactory.createKey();
+        byte[] wrapped = wrap(secretKey);
+        SecretKey unwrapped = unwrap(wrapped, EncryptionConstants.AES_CIPHER);
+
+        return unwrapped != null && Arrays.equals(unwrapped.getEncoded(), secretKey.getEncoded());
     }
 
     @Override

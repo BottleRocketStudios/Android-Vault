@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.bottlerocketstudios.vault.keys.storage;
+package com.bottlerocketstudios.vault.keys.storage.hardware;
 
 import android.os.Build;
 

@@ -16,8 +16,8 @@
 
 package com.bottlerocketstudios.vault.keys.wrapper;
 
+import android.annotation.TargetApi;
 import android.content.Context;
-import android.os.Build;
 import android.security.keystore.KeyProperties;
 
 import java.security.GeneralSecurityException;
@@ -27,13 +27,14 @@ import java.security.GeneralSecurityException;
  * the platform {@link java.security.KeyStore}. This allows us to protect symmetric keys with
  * hardware-backed crypto, if provided by the device.
  * <p>
- * This version uses OAEP padding which is arguably more secure than PKCS1
+ * This version uses OAEP padding which is only supported on API 23+
  * </p>
  * <p>
  * See <a href="http://en.wikipedia.org/wiki/Key_Wrap">key wrapping</a> for more
  * details.
  * </p>
  */
+@TargetApi(23)
 public class AndroidOaepKeystoreSecretKeyWrapper extends AbstractAndroidKeystoreSecretKeyWrapper {
     protected static final String TRANSFORMATION = "RSA/ECB/OAEPwithSHA-256andMGF1Padding";
     protected static final String[] ENCRYPTION_PADDING;
@@ -41,15 +42,9 @@ public class AndroidOaepKeystoreSecretKeyWrapper extends AbstractAndroidKeystore
     protected static final String[] DIGESTS;
 
     static {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            ENCRYPTION_PADDING = new String[] {KeyProperties.ENCRYPTION_PADDING_RSA_OAEP};
-            BLOCK_MODES = new String[] {KeyProperties.BLOCK_MODE_ECB};
-            DIGESTS = new String[] {KeyProperties.DIGEST_SHA256};
-        } else {
-            ENCRYPTION_PADDING = new String[] {"OAEPPadding"};
-            BLOCK_MODES = new String[] {"ECB"};
-            DIGESTS = new String[] {"SHA-256"};
-        }
+        ENCRYPTION_PADDING = new String[] {KeyProperties.ENCRYPTION_PADDING_RSA_OAEP};
+        BLOCK_MODES = new String[] {KeyProperties.BLOCK_MODE_ECB};
+        DIGESTS = new String[] {KeyProperties.DIGEST_SHA256};
     }
 
     /**

@@ -20,7 +20,11 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.util.Log;
 
-import com.bottlerocketstudios.vault.keys.wrapper.AbstractAndroidKeystoreSecretKeyWrapper;
+import com.bottlerocketstudios.vault.keys.storage.hardware.AndroidKeystoreTester;
+import com.bottlerocketstudios.vault.keys.storage.hardware.BadHardware;
+import com.bottlerocketstudios.vault.keys.storage.hardware.LegacyAndroidKeystoreTester;
+import com.bottlerocketstudios.vault.keys.storage.hardware.OaepAndroidKeystoreTester;
+import com.bottlerocketstudios.vault.keys.storage.hardware.Pkcs1AndroidKeystoreTester;
 import com.bottlerocketstudios.vault.keys.wrapper.AndroidKeystoreSecretKeyWrapper;
 import com.bottlerocketstudios.vault.keys.wrapper.AndroidOaepKeystoreSecretKeyWrapper;
 import com.bottlerocketstudios.vault.keys.wrapper.ObfuscatingSecretKeyWrapper;
@@ -40,7 +44,6 @@ public class CompatSharedPrefKeyStorageFactory {
 
     private static final String PREF_COMPAT_FACTORY_WRAPPER_TYPE = "compatFactoryWrapperType.";
     private static final String PREF_COMPAT_FACTORY_SDK_INT_ROOT = "compatFactorySdkInt.";
-    private static final String PREF_COMPAT_FACTORY_ANDROID_KEYSTORE_TEST_STATE_ROOT = "androidKeystoreTestState.";
 
     static final int WRAPPER_TYPE_INVALID = 0;
     static final int WRAPPER_TYPE_OBFUSCATED = 1;
@@ -106,10 +109,18 @@ public class CompatSharedPrefKeyStorageFactory {
     }
 
     private static int determineBestSupportedWrapperType(Context context, int currentSdkInt, String prefFileName, String keystoreAlias) {
-        if (currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !BadHardware.isBadHardware() && canUseAndroidKeystore(context, prefFileName, keystoreAlias, currentSdkInt)) {
-            return WRAPPER_TYPE_RSA_OAEP;
+        if (currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !BadHardware.isBadHardware()) {
+            if (currentSdkInt >= Build.VERSION_CODES.M && canUseAndroidKeystore(new OaepAndroidKeystoreTester(context, keystoreAlias, currentSdkInt), getSharedPreferences(context, prefFileName))) {
+                return WRAPPER_TYPE_RSA_OAEP;
+            } else if (currentSdkInt < Build.VERSION_CODES.M && canUseAndroidKeystore(new Pkcs1AndroidKeystoreTester(context, keystoreAlias, currentSdkInt), getSharedPreferences(context, prefFileName))) {
+                return WRAPPER_TYPE_RSA_PKCS1;
+            }
         }
         return WRAPPER_TYPE_OBFUSCATED;
+    }
+
+    private static boolean canUseAndroidKeystore(AndroidKeystoreTester androidKeystoreTester, SharedPreferences sharedPreferences) {
+        return androidKeystoreTester.canUseAndroidKeystore(sharedPreferences);
     }
 
     private static boolean doesRequireWrapperUpgrade(int oldWrapperType, int bestSupportedWrapperType) {
@@ -142,7 +153,7 @@ public class CompatSharedPrefKeyStorageFactory {
         } else if (oldSdkInt > 0 && oldSdkInt < Build.VERSION_CODES.JELLY_BEAN_MR2) {
             //This device is too old to have used the Android Keystore.
             return WRAPPER_TYPE_OBFUSCATED;
-        } else if (AndroidKeystoreTestState.PASS.equals(readAndroidKeystoreTestState(context, prefFileName, keystoreAlias))) {
+        } else if (LegacyAndroidKeystoreTester.hasAlreadyPassedTest(context, keystoreAlias, oldSdkInt, getSharedPreferences(context, prefFileName))) {
             //This device has a record of passing the Android Keystore test and must have been using the Android Keystore.
             return WRAPPER_TYPE_RSA_PKCS1;
         }
@@ -169,33 +180,6 @@ public class CompatSharedPrefKeyStorageFactory {
         return new SharedPrefKeyStorage(secretKeyWrapper, prefFileName, keystoreAlias, cipherAlgorithm);
     }
 
-    private static boolean canUseAndroidKeystore(Context context, String prefFileName, String keystoreAlias, int currentSdkInt) {
-        AndroidKeystoreTestState androidKeystoreTestState = readAndroidKeystoreTestState(context, prefFileName, keystoreAlias);
-        if (AndroidKeystoreTestState.UNTESTED.equals(androidKeystoreTestState)) {
-            androidKeystoreTestState = performAndroidKeystoreTest(context, keystoreAlias, currentSdkInt);
-            writeAndroidKeystoreTestState(context, prefFileName, keystoreAlias, androidKeystoreTestState);
-        }
-        return AndroidKeystoreTestState.PASS.equals(androidKeystoreTestState);
-    }
-
-    private static AndroidKeystoreTestState performAndroidKeystoreTest(Context context, String keystoreAlias, int currentSdkInt) {
-        AndroidKeystoreTestState androidKeystoreTestState = AndroidKeystoreTestState.FAIL;
-        if (currentSdkInt >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            try {
-                AbstractAndroidKeystoreSecretKeyWrapper androidKeystoreSecretKeyWrapper = new AndroidOaepKeystoreSecretKeyWrapper(context, keystoreAlias);
-                androidKeystoreTestState = androidKeystoreSecretKeyWrapper.testKey() ? AndroidKeystoreTestState.PASS : AndroidKeystoreTestState.FAIL;
-            } catch (Throwable t) {
-                Log.e(TAG, "Caught an exception while creating the AndroidKeystoreSecretKeyWrapper", t);
-                androidKeystoreTestState = AndroidKeystoreTestState.FAIL;
-            }
-        }
-
-        if (AndroidKeystoreTestState.FAIL.equals(androidKeystoreTestState)) {
-            Log.w(TAG, "This device failed the AndroidKeystoreSecretKeyWrapper test.");
-        }
-        return androidKeystoreTestState;
-    }
-
     private static String getCurrentWrapperTypeSharedPreferenceKey(String keystoreAlias) {
         return PREF_COMPAT_FACTORY_WRAPPER_TYPE + keystoreAlias;
     }
@@ -209,28 +193,6 @@ public class CompatSharedPrefKeyStorageFactory {
     private static int readWrapperType(Context context, String prefFileName, String keystoreAlias) {
         SharedPreferences sharedPreferences = getSharedPreferences(context, prefFileName);
         return sharedPreferences.getInt(getCurrentWrapperTypeSharedPreferenceKey(keystoreAlias), WRAPPER_TYPE_INVALID);
-    }
-
-    private static String getAndroidKeystoreTestStateSharedPreferenceKey(String keystoreAlias) {
-        return PREF_COMPAT_FACTORY_ANDROID_KEYSTORE_TEST_STATE_ROOT + keystoreAlias;
-    }
-
-    private static void writeAndroidKeystoreTestState(Context context, String prefFileName, String keystoreAlias, AndroidKeystoreTestState androidKeystoreTestState) {
-        getSharedPreferences(context, prefFileName).edit()
-                .putString(getAndroidKeystoreTestStateSharedPreferenceKey(keystoreAlias), androidKeystoreTestState.toString())
-                .apply();
-    }
-
-    private static AndroidKeystoreTestState readAndroidKeystoreTestState(Context context, String prefFileName, String keystoreAlias) {
-        String prefValue = getSharedPreferences(context, prefFileName).getString(getAndroidKeystoreTestStateSharedPreferenceKey(keystoreAlias), AndroidKeystoreTestState.UNTESTED.toString());
-        AndroidKeystoreTestState androidKeystoreTestState;
-        try {
-            androidKeystoreTestState = AndroidKeystoreTestState.valueOf(prefValue);
-        } catch (IllegalArgumentException e) {
-            Log.e(TAG, "Failed to parse previous test state");
-            androidKeystoreTestState = AndroidKeystoreTestState.UNTESTED;
-        }
-        return androidKeystoreTestState;
     }
 
     private static String getCurrentSdkIntSharedPreferenceKey(String keystoreAlias) {
