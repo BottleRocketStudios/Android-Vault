@@ -86,9 +86,11 @@ public class CompatSharedPrefKeyStorageFactory {
                 Log.e(TAG, "Upgrade resulted in an exception", e);
                 result = null;
             }
-        } else {
+        } else if (oldWrapperType != WRAPPER_TYPE_INVALID){
             //Upgrade isn't required, stick with the old type.
             wrapperType = oldWrapperType;
+        } else {
+            wrapperType = newWrapperType;
         }
 
         //Upgrade failed or was unnecessary, get the latest appropriate version of the KeyStorage.
