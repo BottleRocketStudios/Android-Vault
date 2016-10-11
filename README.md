@@ -55,7 +55,7 @@ Add the jcenter repository and include the library in your project with the comp
 
         dependencies {
             ...
-            compile 'com.bottlerocketstudios:vault:1.3.0'
+            compile 'com.bottlerocketstudios:vault:1.4.0'
         }
 
 In rare cases where you need to pull a snapshot build to help troubleshoot the develop branch, snapshots are hosted by JFrog. You should not ship a release using the snapshot library as the actual binary referenced by snapshot is going to change with every build of the develop branch. In the best case you will have irreproducible builds. In the worst case, human extinction. In some more likely middle case, you will have buggy or experimental code in your released app.
@@ -70,7 +70,7 @@ In rare cases where you need to pull a snapshot build to help troubleshoot the d
          
          dependencies {
             ...
-            compile 'com.bottlerocketstudios:vault:1.3.1-SNAPSHOT'
+            compile 'com.bottlerocketstudios:vault:1.4.1-SNAPSHOT'
          }
 
 #### Sample Application
@@ -160,6 +160,12 @@ You can use the SharedPreferenceVault with SecretKey generated entirely from the
 #### Rekeying
 The vault can be rekeyed at any time. This will delete all values in the shared 
 preference file. This is completely irreversible.
+
+### Auditor Notes
+Automated testing tools are often built to trigger on potential cryptographic mishaps. That is fine and sunlight is often the best disinfectant, especially in crypto. That is part of why this is an open source library. However, this library will cause two irrelevant reports to occur. 
+
+*   Using an ECB block mode - Some tools will trigger if they see the letters ECB in any transform. This is not a problem because ECB is only used along with RSA to wrap a key. The short version is that a block cipher mode is a bit of a misnomer on a key wrap operation where the payload is smaller than the RSA key itself. Ultimately the RSA/ECB/PKCS1Padding transform is the only useful asymmetric transform in the Android Keystore for API 18-22, so there isn't any wiggle room here anyway.
+*   Using RSA without OAEP padding - This one isn't exactly wrong, but it cannot be avoided. The library had previously only used PKCS1 with the Android Keystore. Starting with 1.4.0, the library is using the best security that it can based on API level. For API 18-22 that means RSA/ECB/PKCS1Padding and for API 23+ that means RSA/ECB/OAEPWithSHA-256AndMGF1Padding. API 23+ devices will be automatically migrated to OAEP. API support matrix: https://developer.android.com/training/articles/keystore.html#SupportedCiphers 
 
 ### Build
 This project must be built with gradle. 

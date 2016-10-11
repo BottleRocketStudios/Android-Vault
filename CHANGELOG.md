@@ -1,10 +1,11 @@
 # Vault Changelog #
 
+*   1.4.0 - Make OAEP padding default for wrapped keys on API 23+ devices.
 *   1.3.1 - Catch any test failure
-*	1.3.0 - Lock Screen and Memory Only
-	*	Create a vault that can only be opened on API23+ devices which have been unlocked recently.
-	*	Create a vault that requires a user supplied password to unlock.
-	*   Create a method to determine which type of key storage a vault is using. 
+*   1.3.0 - Lock Screen and Memory Only
+    *   Create a vault that can only be opened on API23+ devices which have been unlocked recently.
+    *   Create a vault that requires a user supplied password to unlock.
+    *   Create a method to determine which type of key storage a vault is using. 
 *   1.2.5 - Open source release.
 *   1.2.3 - Key Caching.
     *   Now caching the SecretKey in memory to further increase multithreaded performance with frequent reads. Better to have one SecretKey in memory than many garbage collected copies of it all over the heap.

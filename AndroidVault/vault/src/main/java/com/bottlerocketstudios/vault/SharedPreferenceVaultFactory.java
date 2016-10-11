@@ -129,6 +129,7 @@ public class SharedPreferenceVaultFactory {
 
     @TargetApi(Build.VERSION_CODES.M)
     public static boolean canUseKeychainAuthentication(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return false;
         KeyguardManager keyguardManager = context.getSystemService(KeyguardManager.class);
         return keyguardManager.isKeyguardSecure();
     }

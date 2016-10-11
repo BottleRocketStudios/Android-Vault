@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.bottlerocketstudios.vault.test;
+package com.bottlerocketstudios.vault.keys.storage;
 
 import android.os.Build;
 import android.test.AndroidTestCase;
@@ -21,9 +21,6 @@ import android.util.Log;
 
 import com.bottlerocketstudios.vault.EncryptionConstants;
 import com.bottlerocketstudios.vault.keys.generator.Aes256RandomKeyFactory;
-import com.bottlerocketstudios.vault.keys.storage.CompatSharedPrefKeyStorageFactory;
-import com.bottlerocketstudios.vault.keys.storage.KeyStorage;
-import com.bottlerocketstudios.vault.keys.storage.KeyStorageType;
 import com.bottlerocketstudios.vault.salt.PrngSaltGenerator;
 
 import java.security.GeneralSecurityException;
@@ -32,21 +29,22 @@ import java.util.Arrays;
 import javax.crypto.SecretKey;
 
 /**
- * Test transition to version 18 from a pre-18 device if it receives an OS upgrade.
+ * Created on 9/21/16.
  */
-public class TestVaultUpgradePre18 extends AndroidTestCase {
+public class TestVaultOaepUpgrade extends AndroidTestCase {
     private static final String TAG = TestVaultUpgradePre18.class.getSimpleName();
 
-    private static final String KEY_FILE_NAME = "upgradeKeyFile";
-    private static final String KEY_ALIAS_1 = "upgradeKeyAlias";
-    private static final int KEY_INDEX_1 = 1232234;
-    private static final String PRESHARED_SECRET_1 = "a;sdlfkja;asdfae211;s122222e;l2ihjl9jl9dj9";
+    private static final String KEY_FILE_NAME = "OaepUpgradeKeyFile";
+    private static final String KEY_ALIAS_1 = "OaepUpgradeKeyAlias";
+    private static final int KEY_INDEX_1 = 1223422;
+    private static final String PRESHARED_SECRET_1 = "a;sdlfkja;asdfa4548w1211xji22e;l2ihjl9jl9dj9";
 
     public void testUpgrade() {
+        assertTrue("This test will not pass below API 23", Build.VERSION.SDK_INT >= Build.VERSION_CODES.M);
         try {
             SecretKey originalKey = Aes256RandomKeyFactory.createKey();
-            KeyStorage keyStorageOld = getKeyStorage(Build.VERSION_CODES.JELLY_BEAN);
-            assertEquals("Incorrect KeyStorageType", KeyStorageType.OBFUSCATED, keyStorageOld.getKeyStorageType());
+            KeyStorage keyStorageOld = getKeyStorage(CompatSharedPrefKeyStorageFactory.WRAPPER_TYPE_RSA_PKCS1, CompatSharedPrefKeyStorageFactory.WRAPPER_TYPE_RSA_PKCS1);
+            assertEquals("Incorrect KeyStorageType", KeyStorageType.ANDROID_KEYSTORE, keyStorageOld.getKeyStorageType());
             keyStorageOld.clearKey(getContext());
             keyStorageOld.saveKey(getContext(), originalKey);
 
@@ -54,13 +52,13 @@ public class TestVaultUpgradePre18 extends AndroidTestCase {
             assertNotNull("Key was null after creation and read from old storage.", originalReadKey);
             assertTrue("Keys were not identical after creation and read from old storage", Arrays.equals(originalKey.getEncoded(), originalReadKey.getEncoded()));
 
-            KeyStorage keyStorageNew = getKeyStorage(Build.VERSION_CODES.JELLY_BEAN_MR2);
+            KeyStorage keyStorageNew = getKeyStorage(CompatSharedPrefKeyStorageFactory.WRAPPER_TYPE_RSA_PKCS1, CompatSharedPrefKeyStorageFactory.WRAPPER_TYPE_RSA_OAEP);
             assertEquals("Incorrect KeyStorageType", KeyStorageType.ANDROID_KEYSTORE, keyStorageNew.getKeyStorageType());
             SecretKey upgradedKey = keyStorageNew.loadKey(getContext());
             assertNotNull("Key was null after upgrade.", upgradedKey);
             assertTrue("Keys were not identical after upgrade", Arrays.equals(originalKey.getEncoded(), upgradedKey.getEncoded()));
 
-            KeyStorage keyStorageRead = getKeyStorage(Build.VERSION_CODES.JELLY_BEAN_MR2);
+            KeyStorage keyStorageRead = getKeyStorage(CompatSharedPrefKeyStorageFactory.WRAPPER_TYPE_RSA_OAEP, CompatSharedPrefKeyStorageFactory.WRAPPER_TYPE_RSA_OAEP);
             assertEquals("Incorrect KeyStorageType", KeyStorageType.ANDROID_KEYSTORE, keyStorageRead.getKeyStorageType());
             SecretKey upgradedReadKey = keyStorageRead.loadKey(getContext());
             assertNotNull("Key was null after upgrade and read from storage.", upgradedReadKey);
@@ -73,16 +71,17 @@ public class TestVaultUpgradePre18 extends AndroidTestCase {
 
     }
 
-    private KeyStorage getKeyStorage(int sdkInt) throws GeneralSecurityException {
+    private KeyStorage getKeyStorage(int oldWrapperType, int newWrapperType) throws GeneralSecurityException {
         return CompatSharedPrefKeyStorageFactory.createKeyStorage(
                 getContext(),
-                sdkInt,
+                Build.VERSION.SDK_INT,
                 KEY_FILE_NAME,
                 KEY_ALIAS_1,
                 KEY_INDEX_1,
                 EncryptionConstants.AES_CIPHER,
                 PRESHARED_SECRET_1,
-                new PrngSaltGenerator());
+                new PrngSaltGenerator(),
+                oldWrapperType,
+                newWrapperType);
     }
-
 }
