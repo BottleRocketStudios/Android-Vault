@@ -21,6 +21,11 @@ import android.content.Context;
 import android.security.keystore.KeyProperties;
 
 import java.security.GeneralSecurityException;
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.MGF1ParameterSpec;
+
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 
 /**
  * Wraps {@link javax.crypto.SecretKey} instances using a public/private key pair stored in
@@ -40,6 +45,10 @@ public class AndroidOaepKeystoreSecretKeyWrapper extends AbstractAndroidKeystore
     protected static final String[] ENCRYPTION_PADDING;
     protected static final String[] BLOCK_MODES;
     protected static final String[] DIGESTS;
+
+    //Cipher Algorithm Spec Params
+    protected static final String MESSAGE_DIGEST_ALGORITHM_NAME = "SHA-256";
+    protected static final String MASK_GENERATION_FUNCTION_ALGORITHM_NAME = "MGF1";
 
     static {
         ENCRYPTION_PADDING = new String[] {KeyProperties.ENCRYPTION_PADDING_RSA_OAEP};
@@ -76,5 +85,14 @@ public class AndroidOaepKeystoreSecretKeyWrapper extends AbstractAndroidKeystore
     @Override
     protected String[] getDigests() {
         return DIGESTS;
+    }
+
+    @Override
+    public AlgorithmParameterSpec buildCipherAlgorithmParameterSpec() {
+        return new OAEPParameterSpec(
+                MESSAGE_DIGEST_ALGORITHM_NAME,
+                MASK_GENERATION_FUNCTION_ALGORITHM_NAME,
+                MGF1ParameterSpec.SHA1,
+                PSource.PSpecified.DEFAULT);
     }
 }
