@@ -49,7 +49,7 @@ public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretK
     protected static final String ALGORITHM = "RSA";
     protected static final int CERTIFICATE_LIFE_YEARS = 100;
 
-    private final Cipher mCipher;
+    protected final Cipher mCipher;  // need protected access for AndroidAoep workaround
     private final Context mContext;
     private KeyPair mKeyPair;
     private final String mAlias;
@@ -68,7 +68,8 @@ public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretK
 
     protected abstract String getTransformation();
 
-    private KeyPair getKeyPair() throws GeneralSecurityException, IOException {
+    // Need getKeyPair() protected access for AndroidAoep workaround
+    protected KeyPair getKeyPair() throws GeneralSecurityException, IOException {
         synchronized (mAlias) {
             if (mKeyPair == null) {
                 final KeyStore keyStore = KeyStore.getInstance(EncryptionConstants.ANDROID_KEY_STORE);

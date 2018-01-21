@@ -16,11 +16,20 @@
 
 package com.bottlerocketstudios.vault.keys.wrapper;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.security.keystore.KeyProperties;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.spec.MGF1ParameterSpec;
+
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 
 /**
  * Wraps {@link javax.crypto.SecretKey} instances using a public/private key pair stored in
@@ -41,6 +50,8 @@ public class AndroidOaepKeystoreSecretKeyWrapper extends AbstractAndroidKeystore
     protected static final String[] BLOCK_MODES;
     protected static final String[] DIGESTS;
 
+    private OAEPParameterSpec sp;
+
     static {
         ENCRYPTION_PADDING = new String[] {KeyProperties.ENCRYPTION_PADDING_RSA_OAEP};
         BLOCK_MODES = new String[] {KeyProperties.BLOCK_MODE_ECB};
@@ -56,7 +67,22 @@ public class AndroidOaepKeystoreSecretKeyWrapper extends AbstractAndroidKeystore
      */
     public AndroidOaepKeystoreSecretKeyWrapper(Context context, String alias) throws GeneralSecurityException {
         super(context, alias);
+        sp = new OAEPParameterSpec(KeyProperties.DIGEST_SHA256, "MGF1", new MGF1ParameterSpec(KeyProperties.DIGEST_SHA1), PSource.PSpecified.DEFAULT);
     }
+
+    // Temporary workaround for https://github.com/BottleRocketStudios/Android-Vault/issues/5
+    @Override
+    public synchronized byte[] wrap(SecretKey key) throws GeneralSecurityException, IOException {
+        mCipher.init(Cipher.WRAP_MODE, getKeyPair().getPublic(), sp);
+        return mCipher.wrap(key);
+    }
+
+    @Override
+    public synchronized SecretKey unwrap(byte[] blob, String wrappedKeyAlgorithm) throws GeneralSecurityException, IOException {
+        mCipher.init(Cipher.UNWRAP_MODE, getKeyPair().getPrivate(), sp);
+        return (SecretKey) mCipher.unwrap(blob, wrappedKeyAlgorithm, Cipher.SECRET_KEY);
+    }
+    // End of workaround
 
     @Override
     protected String getTransformation() {
