@@ -47,6 +47,7 @@ import javax.security.auth.x500.X500Principal;
  */
 public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretKeyWrapper {
     protected static final String ALGORITHM = "RSA";
+    protected static final int START_OFFSET = -5;  /* -5 mins */
     protected static final int CERTIFICATE_LIFE_YEARS = 100;
 
     private final Cipher mCipher;
@@ -88,6 +89,8 @@ public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretK
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     private void generateKeyPair(Context context, String alias) throws GeneralSecurityException {
         final Calendar start = new GregorianCalendar();
+        start.add(Calendar.MINUTE, START_OFFSET); // avoid KeyNotYetValidException
+
         final Calendar end = new GregorianCalendar();
         end.add(Calendar.YEAR, CERTIFICATE_LIFE_YEARS);
         final AlgorithmParameterSpec algorithmParameterSpec = getVersionAppropriateAlgorithmParameterSpec(context, alias, start, end, BigInteger.ONE, new X500Principal("CN=" + alias));
