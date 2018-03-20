@@ -159,7 +159,7 @@ You can use the SharedPreferenceVault with SecretKey generated entirely from the
 
 #### Rekeying
 The vault can be rekeyed at any time. This will delete all values in the shared 
-preference file. This is completely irreversable. 
+preference file. This is completely irreversible.
 
 ### Auditor Notes
 Automated testing tools are often built to trigger on potential cryptographic mishaps. That is fine and sunlight is often the best disinfectant, especially in crypto. That is part of why this is an open source library. However, this library will cause two irrelevant reports to occur. 
