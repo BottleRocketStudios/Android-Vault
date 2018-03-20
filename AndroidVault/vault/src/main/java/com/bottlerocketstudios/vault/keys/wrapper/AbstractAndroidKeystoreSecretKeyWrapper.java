@@ -47,6 +47,7 @@ import javax.security.auth.x500.X500Principal;
  */
 public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretKeyWrapper {
     protected static final String ALGORITHM = "RSA";
+    protected static final int START_OFFSET = -5;  /* -5 mins */
     protected static final int CERTIFICATE_LIFE_YEARS = 100;
 
     private final Cipher mCipher;
@@ -88,6 +89,8 @@ public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretK
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     private void generateKeyPair(Context context, String alias) throws GeneralSecurityException {
         final Calendar start = new GregorianCalendar();
+        start.add(Calendar.MINUTE, START_OFFSET); // avoid KeyNotYetValidException
+
         final Calendar end = new GregorianCalendar();
         end.add(Calendar.YEAR, CERTIFICATE_LIFE_YEARS);
         final AlgorithmParameterSpec algorithmParameterSpec = getVersionAppropriateAlgorithmParameterSpec(context, alias, start, end, BigInteger.ONE, new X500Principal("CN=" + alias));
@@ -141,13 +144,29 @@ public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretK
 
     @Override
     public synchronized byte[] wrap(SecretKey key) throws GeneralSecurityException, IOException {
-        mCipher.init(Cipher.WRAP_MODE, getKeyPair().getPublic());
+
+        AlgorithmParameterSpec spec = buildCipherAlgorithmParameterSpec();
+
+        if (spec == null) {
+            mCipher.init(Cipher.WRAP_MODE, getKeyPair().getPublic());
+        } else {
+            mCipher.init(Cipher.WRAP_MODE, getKeyPair().getPublic(), spec);
+        }
+
         return mCipher.wrap(key);
     }
 
     @Override
     public synchronized SecretKey unwrap(byte[] blob, String wrappedKeyAlgorithm) throws GeneralSecurityException, IOException {
-        mCipher.init(Cipher.UNWRAP_MODE, getKeyPair().getPrivate());
+
+        AlgorithmParameterSpec spec = buildCipherAlgorithmParameterSpec();
+
+        if (spec == null) {
+            mCipher.init(Cipher.UNWRAP_MODE, getKeyPair().getPrivate());
+        } else {
+            mCipher.init(Cipher.UNWRAP_MODE, getKeyPair().getPrivate(), spec);
+        }
+
         return (SecretKey) mCipher.unwrap(blob, wrappedKeyAlgorithm, Cipher.SECRET_KEY);
     }
 
@@ -157,6 +176,10 @@ public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretK
         final KeyStore keyStore = KeyStore.getInstance(EncryptionConstants.ANDROID_KEY_STORE);
         keyStore.load(null);
         keyStore.deleteEntry(mAlias);
+    }
+
+    public AlgorithmParameterSpec buildCipherAlgorithmParameterSpec() {
+        return null;
     }
 
     public boolean testKey() throws GeneralSecurityException, IOException {

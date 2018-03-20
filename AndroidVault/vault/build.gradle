@@ -5,7 +5,7 @@ apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.jfrog.artifactory-upload'
 
 group = "com.bottlerocketstudios"
-version = "1.4.0"
+version = "1.4.1-SNAPSHOT"
 
 project.ext.artifactory_artifactid = "vault"
 project.ext.artifactory_packaging = "jar"
@@ -17,12 +17,11 @@ project.ext.artifactory_vcs_url = "https://github.com/BottleRocketStudios/Androi
 project.ext.bundle_name = "vault"
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.3"
+    compileSdkVersion 26
 
     defaultConfig {
         minSdkVersion 15
-        targetSdkVersion 23
+        targetSdkVersion 26
         versionCode 1
         versionName project.version
     }
