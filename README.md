@@ -55,7 +55,7 @@ Add the jcenter repository and include the library in your project with the comp
 
         dependencies {
             ...
-            compile 'com.bottlerocketstudios:vault:1.4.0'
+            compile 'com.bottlerocketstudios:vault:1.4.1'
         }
 
 In rare cases where you need to pull a snapshot build to help troubleshoot the develop branch, snapshots are hosted by JFrog. You should not ship a release using the snapshot library as the actual binary referenced by snapshot is going to change with every build of the develop branch. In the best case you will have irreproducible builds. In the worst case, human extinction. In some more likely middle case, you will have buggy or experimental code in your released app.
@@ -70,7 +70,7 @@ In rare cases where you need to pull a snapshot build to help troubleshoot the d
          
          dependencies {
             ...
-            compile 'com.bottlerocketstudios:vault:1.4.1-SNAPSHOT'
+            compile 'com.bottlerocketstudios:vault:1.4.2-SNAPSHOT'
          }
 
 #### Sample Application
@@ -159,7 +159,7 @@ You can use the SharedPreferenceVault with SecretKey generated entirely from the
 
 #### Rekeying
 The vault can be rekeyed at any time. This will delete all values in the shared 
-preference file. This is completely irreversable. 
+preference file. This is completely irreversible.
 
 ### Auditor Notes
 Automated testing tools are often built to trigger on potential cryptographic mishaps. That is fine and sunlight is often the best disinfectant, especially in crypto. That is part of why this is an open source library. However, this library will cause two irrelevant reports to occur. 
