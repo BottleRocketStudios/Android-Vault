@@ -17,6 +17,7 @@ package com.bottlerocketstudios.vault.keys.storage;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.nfc.Tag;
 import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
@@ -49,7 +50,10 @@ public class KeychainAuthenticatedKeyStorage implements KeyStorage {
     private final String mPadding;
     private final int mAuthDurationSeconds;
 
-    private final String mKeyLock = "keyLock";
+    // private final String mKeyLock = "keyLock"
+    // Final equivalent strings over multiple classes are represented by the same String literal
+    // in memory https://www.javalobby.org//java/forums/t96352.html
+    private final Object mKeyLock = new Object();
 
     public KeychainAuthenticatedKeyStorage(String keyAlias, String algorithm, String blockMode, String padding, int authDurationSeconds) {
         mKeyAlias = keyAlias;

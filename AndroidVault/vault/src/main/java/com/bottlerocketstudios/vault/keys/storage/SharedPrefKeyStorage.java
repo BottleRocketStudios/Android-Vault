@@ -40,8 +40,17 @@ public class SharedPrefKeyStorage implements KeyStorage {
     private final String mPrefFileName;
     private final String mKeystoreAlias;
     private final String mCipherAlgorithm;
-    private SecretKey mCachedSecretKey;
-    private final String mKeyLock = "keyLock";
+
+    // Should mCachedSecretKey be Volatile?
+    // https://www.javamex.com/tutorials/synchronization_volatile.shtml
+    // Should be volatile with synchronous locks when accessing. This makes read, update, and write
+    // atomic functions
+    private volatile SecretKey mCachedSecretKey;
+
+    // private final String mKeyLock = "keyLock"
+    // Final equivalent strings over multiple classes are represented by the same String literal
+    // in memory https://www.javalobby.org//java/forums/t96352.html
+    private final Object mKeyLock = new Object();
 
     public SharedPrefKeyStorage(SecretKeyWrapper secretKeyWrapper, String prefFileName, String keystoreAlias, String cipherAlgorithm) {
         mSecretKeyWrapper = secretKeyWrapper;
@@ -51,32 +60,39 @@ public class SharedPrefKeyStorage implements KeyStorage {
     }
 
     @Override
-    public SecretKey loadKey(Context context) {
-        if (mCachedSecretKey == null) {
+    public synchronized SecretKey loadKey(Context context) {
+        Log.v(TAG, "loadKey");
+        // "Double-Check" Locking http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
+        // if (mCachedSecretKey == null) {
             //Only allow one thread at a time load the key.
-            synchronized (mKeyLock) {
-                //If the other thread updated the key, don't re-load it.
-                if (mCachedSecretKey == null) {
-                    mCachedSecretKey = loadSecretKey(context, mKeystoreAlias, mCipherAlgorithm);
-                }
-            }
+            //synchronized (mKeyLock) {
+        //If the other thread updated the key, don't re-load it.
+        if (mCachedSecretKey == null) {
+            mCachedSecretKey = loadSecretKey(context, mKeystoreAlias, mCipherAlgorithm);
         }
+            //}
+        //}
         return mCachedSecretKey;
     }
 
     @Override
     public boolean saveKey(Context context, SecretKey secretKey) {
+        Log.v(TAG, "saveKey");
         boolean success;
         synchronized (mKeyLock) {
             success = storeSecretKey(context, mKeystoreAlias, secretKey);
             //Clear the cached key upon failure to save.
+
+            // Inconsistent synchronization only when mCachedSecretKey is not volatile
             mCachedSecretKey = success ? secretKey : null;
         }
         return success;
     }
 
+    // Why is clearing the key not synchronous, couldn't other threads be using the cached key?
     @Override
     public void clearKey(Context context) {
+        // Not accessed synchronously
         mCachedSecretKey = null;
         storeSecretKey(context, mKeystoreAlias, null);
         try {
