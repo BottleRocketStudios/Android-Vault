@@ -65,4 +65,10 @@ public interface SharedPreferenceVault extends SharedPreferences {
      * Method to find out expected security level of KeyStorage implementation being used.
      */
     KeyStorageType getKeyStorageType();
+
+    /**
+     *
+     */
+    //TODO: Implement and define callback listener for error handling through .apply
+    void setCallbackListener();
 }
