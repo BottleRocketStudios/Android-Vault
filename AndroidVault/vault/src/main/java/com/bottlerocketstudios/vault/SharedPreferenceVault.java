@@ -25,6 +25,15 @@ import javax.crypto.SecretKey;
  * Shared Preferences backed vault for storing sensitive information.
  */
 public interface SharedPreferenceVault extends SharedPreferences {
+
+    /**
+     * Interface to handle atypical results from the standard {@link Editor#commit()} and {@link Editor#apply()}
+     */
+    interface SharedPrefVaultWriteListener {
+        void onSuccess();
+        void onError();
+    }
+
     /**
      * Remove all stored values and destroy cryptographic keys associated with the vault instance.
      * <strong>This will permanently destroy all data in the preference file.</strong>
@@ -67,8 +76,8 @@ public interface SharedPreferenceVault extends SharedPreferences {
     KeyStorageType getKeyStorageType();
 
     /**
-     *
+     * Add a listener to handle atypical behavior when {@link Editor#commit()} or {@link Editor#apply()} is used
+     * with Vault.
      */
-    //TODO: Implement and define callback listener for error handling through .apply
-    void setCallbackListener();
+    SharedPreferenceVault setSharedPrefVaultWriteListener(SharedPrefVaultWriteListener listener);
 }
