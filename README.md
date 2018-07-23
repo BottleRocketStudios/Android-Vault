@@ -35,6 +35,7 @@ These components can be used independently of each other, but will be convenient
     *   SharedPreferenceVaultRegistry - A centralized place to keep your SharedPreferenceVault instances. Guarantees the required uniqueness of values used to index the stored values.
     *   StandardSharedPreferenceVault - Implementation used by the factory that is backed by an actual SharedPreference file. 
     *   StandardSharedPreferenceVaultEditor - Implements SharedPreference.Editor and provides the same behavior.
+    *   SharedPrefVaultWriteListener - Improves the functionality of the standard commit and apply associated with SharedPreference
 *   KeyStorage - Secure method to store your SecretKey objects.
     *   CompatSharedPrefKeyStorageFactory - Self-upgrading SharedPreferences backed KeyStorage factory.
     *   SharedPrefKeyStorage - Implementation used by the factory. 
@@ -158,9 +159,47 @@ You can use the SharedPreferenceVault with SecretKey generated entirely from the
         SharedPreferenceVaultRegistry.getInstance().getVault(VAULT_ID).rekeyStorage(secretKey);
 
 #### Rekeying
-The vault can be rekeyed at any time. This will delete all values in the shared 
-preference file. This is completely irreversible.
+The vault can be rekeyed at any time. This will delete all values in the shared preference file. This is completely irreversible.
 
+#### API Changes to Commit and Apply
+Typical results of the SharedPreferenc commit and apply are slightly modified in Vault resulting of the extra encryption that is taking place. Because of this, commit and apply can both fail for reasons other than the SharedPreference write failing. The return type for commit is now more important. The recommendation is to **enable exceptions** when creating a SharedPreferenceVault.
+
+* `SharedPreferenceVaultFactory.getCompatAes256Vault()`
+* `SharedPreferenceVaultFactory.getAppKeyedCompatAes256Vault()`
+* `SharedPreferenceVaultFactory.getMemoryOnlyKeyAes256Vault()`
+
+These all have the ability to throw `GeneralSecurityException` or `UnsupportedEncodingException` with **exceptions enabled**. These exceptions can occur before the commit or apply is actually attempted and can result in a failure to write data to the SharedPreference file.
+
+1. If using `commit()` consider **enabling exceptions** to allow handling of these errors. Also, pay attention to the return type from `commit()` to make sure data was successfully written.
+2. If using `apply()`, there is a new `SharedPrefVaultWriteListener` interface that can be used to handle callback should any of the errors mentioned above. The `SharedPreferenceVault` interface now supports a new method to add this Listener to the Vault. `setSharedPrefVaultWriteListener(SharedPrefVaultWriteListener listener)` This method can be chained but must be called **before** an editor is created.
+    * The actual result of the write is still ignored when using the new `apply()` with a listener. The listener is only to show potential encryption issues that happen *before* the write.
+    * Setting no listener will behave like the standard `SharedPreference.apply()`. All error are ignored.
+    * The listener will only provide basic information on success and fail, it is still recommended that if more information is required, to **enable exceptions**.
+
+Adding a listener is easy. Simply add an implementation of the `SharedPrefVaultWriteListener` to the `SharedPreferenceVault` **before** and editor is created from the Vault.
+
+```java
+//Adding a listener to a SharedPreferenceVault Instance
+SharedPreferenceVault secureVault = SharedPreferenceVaultFactory.getAppKeyedCompatAes256Vault(
+            context,
+            PREF_FILE_NAME,
+            KEY_FILE_NAME,
+            KEY_ALIAS,
+            VAULT_ID,
+            PRESHARED_SECRET
+    ).setSharedPrefVaultWriteListener(new SharedPrefVaultWriteListener() {
+        @Override
+        public void onSuccess() {
+            //On Success code
+        }
+
+        @Override
+        public void onError() {
+            //On Error code
+        }
+    });
+
+```
 ### Auditor Notes
 Automated testing tools are often built to trigger on potential cryptographic mishaps. That is fine and sunlight is often the best disinfectant, especially in crypto. That is part of why this is an open source library. However, this library will cause two irrelevant reports to occur. 
 
@@ -171,6 +210,6 @@ Automated testing tools are often built to trigger on potential cryptographic mi
 This project must be built with gradle. 
 
 *   Version Numbering - The version name should end with "-SNAPSHOT" for non release builds. This will cause the resulting binary, source, and javadoc files to be uploaded to the snapshot repository in Maven as a snapshot build. Removing snapshot from the version name will publish the build on jcenter. If that version is already published, it will not overwrite it.
-*   Execution - To build this libarary, associated tasks are dynamically generated by Android build tools in conjunction with Gradle. Example command for the production flavor of the release build type: 
+*   Execution - To build this library, associated tasks are dynamically generated by Android build tools in conjunction with Gradle. Example command for the production flavor of the release build type: 
     *   Build and upload: `./gradlew --refresh-dependencies clean uploadToMaven`
     *   Build only: `./gradlew --refresh-dependencies clean jarRelease`
