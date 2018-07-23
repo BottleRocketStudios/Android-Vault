@@ -17,7 +17,6 @@ package com.bottlerocketstudios.vault.keys.storage;
 
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.nfc.Tag;
 import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
