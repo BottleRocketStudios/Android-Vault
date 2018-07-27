@@ -139,34 +139,6 @@ public class TestSharedPrefListener extends AndroidTestCase {
         editor.putString(TEST_STRING_KEY, TEST_STRING_VALUE).apply();
     }
 
-    public void testNullKeyFailureCommit() {
-        init();
-        SharedPreferences.Editor editor = mSharedPreferenceVault.setSharedPrefVaultWriteListener(
-                new SharedPrefVaultWriteListenerExtension(new OnComplete() {
-                    @Override
-                    public void onComplete(boolean success) {
-                        assertFalse("The key is still initialized", success);
-                    }
-                })
-        ).edit();
-
-        editor.putString(null, TEST_STRING_VALUE).commit();
-    }
-
-    public void testNullKeyFailureApply() {
-        init();
-        SharedPreferences.Editor editor = mSharedPreferenceVault.setSharedPrefVaultWriteListener(
-                new SharedPrefVaultWriteListenerExtension(new OnComplete() {
-                    @Override
-                    public void onComplete(boolean success) {
-                        assertFalse("The key is still initialized", success);
-                    }
-                })
-        ).edit();
-
-        editor.putString(null, TEST_STRING_VALUE).apply();
-    }
-
     private final SecretKey malformedSecretKey = new SecretKey() {
         private final String mKey = "ThisIsMySuperSecretKey";
 
