@@ -162,7 +162,7 @@ You can use the SharedPreferenceVault with SecretKey generated entirely from the
 The vault can be rekeyed at any time. This will delete all values in the shared preference file. This is completely irreversible.
 
 #### API Changes to Commit and Apply
-Typical results of the SharedPreferenc commit and apply are slightly modified in Vault resulting of the extra encryption that is taking place. Because of this, commit and apply can both fail for reasons other than the SharedPreference write failing. The return type for commit is now more important. The recommendation is to **enable exceptions** when creating a SharedPreferenceVault.
+Typical behavior of the SharedPreference commit and apply methods are slightly modified in Vault as a result of the added encryption. Because of this, commit and apply can both fail for reasons other than the SharedPreference write failing. This means that you should pay attention to the return value for commit and react appropriately in the case where it returns false. It is recommended to **enable exceptions** when creating a SharedPreferenceVault if you want to see more information on failures (by catching the thrown exception yourself)
 
 * `SharedPreferenceVaultFactory.getCompatAes256Vault()`
 * `SharedPreferenceVaultFactory.getAppKeyedCompatAes256Vault()`
@@ -173,8 +173,8 @@ These all have the ability to throw `GeneralSecurityException` or `UnsupportedEn
 1. If using `commit()` consider **enabling exceptions** to allow handling of these errors. Also, pay attention to the return type from `commit()` to make sure data was successfully written.
 2. If using `apply()`, there is a new `SharedPrefVaultWriteListener` interface that can be used to handle callback should any of the errors mentioned above. The `SharedPreferenceVault` interface now supports a new method to add this Listener to the Vault. `setSharedPrefVaultWriteListener(SharedPrefVaultWriteListener listener)` This method can be chained but must be called **before** an editor is created.
     * The actual result of the write is still ignored when using the new `apply()` with a listener. The listener is only to show potential encryption issues that happen *before* the write.
-    * Setting no listener will behave like the standard `SharedPreference.apply()`. All error are ignored.
-    * The listener will only provide basic information on success and fail, it is still recommended that if more information is required, to **enable exceptions**.
+    * Setting no listener will behave like the standard `SharedPreference.apply()`. All errors are ignored.
+    * The listener will only provide basic information on success and fail. It is recommended to **enable exceptions** if more information on the failure is required.
 
 Adding a listener is easy. Simply add an implementation of the `SharedPrefVaultWriteListener` to the `SharedPreferenceVault` **before** and editor is created from the Vault.
 
