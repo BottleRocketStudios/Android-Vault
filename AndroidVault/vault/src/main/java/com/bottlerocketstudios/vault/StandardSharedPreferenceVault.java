@@ -58,6 +58,7 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
     private final List<OnSharedPreferenceChangeListener> mSharedPreferenceChangeListenerList = Collections.synchronizedList(new LinkedList<OnSharedPreferenceChangeListener>());
 
     private SharedPreferences mSharedPreferences;
+    private SharedPrefVaultWriteListener mListener;
     private boolean mDebugEnabled;
 
     public StandardSharedPreferenceVault(Context context, KeyStorage keyStorage, String prefFileName, String transform, boolean enableExceptions) {
@@ -66,6 +67,7 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
         mSharedPreferenceName = prefFileName;
         mTransform = transform;
         mEnableExceptions = enableExceptions;
+        mListener = null;
     }
 
     boolean writeValues(boolean commit, boolean wasCleared, Set<String> removalSet, StronglyTypedBundle stronglyTypedBundle) {
@@ -291,7 +293,7 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
 
     @Override
     public Editor edit() {
-        return new StandardSharedPreferenceVaultEditor(this);
+        return new StandardSharedPreferenceVaultEditor(this, mListener);
     }
 
     private void notifyListeners(Set<String> preferenceKeySet) {
@@ -349,6 +351,13 @@ public class StandardSharedPreferenceVault implements SharedPreferenceVault {
     @Override
     public KeyStorageType getKeyStorageType() {
         return mKeyStorage.getKeyStorageType();
+    }
+
+    @Override
+    public SharedPreferenceVault setSharedPrefVaultWriteListener(SharedPrefVaultWriteListener listener) {
+        log("Adding a write listener to the SharedPreferenceVault.");
+        mListener = listener;
+        return this;
     }
 
     private void log(String message) {

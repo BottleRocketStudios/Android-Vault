@@ -26,12 +26,15 @@ import java.util.Set;
 public class StandardSharedPreferenceVaultEditor implements SharedPreferences.Editor {
 
     private final StandardSharedPreferenceVault mStandardSharedPreferenceVault;
+    private final SharedPreferenceVault.SharedPrefVaultWriteListener mListener;
     private StronglyTypedBundle mStronglyTypedBundle = new StronglyTypedBundle();
     private boolean mCleared;
     private Set<String> mRemovalSet = new HashSet<>();
 
-    public StandardSharedPreferenceVaultEditor(StandardSharedPreferenceVault standardSharedPreferenceVault) {
+    public StandardSharedPreferenceVaultEditor(StandardSharedPreferenceVault standardSharedPreferenceVault,
+                                               SharedPreferenceVault.SharedPrefVaultWriteListener listener) {
         mStandardSharedPreferenceVault = standardSharedPreferenceVault;
+        mListener = listener;
     }
 
     @Override
@@ -85,11 +88,31 @@ public class StandardSharedPreferenceVaultEditor implements SharedPreferences.Ed
 
     @Override
     public boolean commit() {
-        return mStandardSharedPreferenceVault.writeValues(true, mCleared, mRemovalSet, mStronglyTypedBundle);
+        boolean success = mStandardSharedPreferenceVault.writeValues(
+                true,
+                mCleared,
+                mRemovalSet,
+                mStronglyTypedBundle);
+        if(mListener != null && success) {
+            mListener.onSuccess();
+        } else if(mListener != null && !success) {
+            mListener.onError();
+        }
+
+        return success;
     }
 
     @Override
     public void apply() {
-        mStandardSharedPreferenceVault.writeValues(false, mCleared, mRemovalSet, mStronglyTypedBundle);
+        boolean success = mStandardSharedPreferenceVault.writeValues(
+                false,
+                mCleared,
+                mRemovalSet,
+                mStronglyTypedBundle);
+        if(mListener != null && success) {
+            mListener.onSuccess();
+        } else if(mListener != null && !success) {
+            mListener.onError();
+        }
     }
 }

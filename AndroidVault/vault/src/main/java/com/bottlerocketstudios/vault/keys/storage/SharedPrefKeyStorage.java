@@ -40,8 +40,9 @@ public class SharedPrefKeyStorage implements KeyStorage {
     private final String mPrefFileName;
     private final String mKeystoreAlias;
     private final String mCipherAlgorithm;
+
     private SecretKey mCachedSecretKey;
-    private final String mKeyLock = "keyLock";
+
 
     public SharedPrefKeyStorage(SecretKeyWrapper secretKeyWrapper, String prefFileName, String keystoreAlias, String cipherAlgorithm) {
         mSecretKeyWrapper = secretKeyWrapper;
@@ -51,32 +52,26 @@ public class SharedPrefKeyStorage implements KeyStorage {
     }
 
     @Override
-    public SecretKey loadKey(Context context) {
+    public synchronized SecretKey loadKey(Context context) {
+        Log.v(TAG, "loadKey");
         if (mCachedSecretKey == null) {
-            //Only allow one thread at a time load the key.
-            synchronized (mKeyLock) {
-                //If the other thread updated the key, don't re-load it.
-                if (mCachedSecretKey == null) {
-                    mCachedSecretKey = loadSecretKey(context, mKeystoreAlias, mCipherAlgorithm);
-                }
-            }
+            mCachedSecretKey = loadSecretKey(context, mKeystoreAlias, mCipherAlgorithm);
         }
         return mCachedSecretKey;
     }
 
     @Override
-    public boolean saveKey(Context context, SecretKey secretKey) {
-        boolean success;
-        synchronized (mKeyLock) {
-            success = storeSecretKey(context, mKeystoreAlias, secretKey);
-            //Clear the cached key upon failure to save.
-            mCachedSecretKey = success ? secretKey : null;
-        }
+    public synchronized boolean saveKey(Context context, SecretKey secretKey) {
+        Log.v(TAG, "saveKey");
+        boolean success = storeSecretKey(context, mKeystoreAlias, secretKey);
+        //Clear the cached key upon failure to save.
+        mCachedSecretKey = success ? secretKey : null;
+
         return success;
     }
 
     @Override
-    public void clearKey(Context context) {
+    public synchronized void clearKey(Context context) {
         mCachedSecretKey = null;
         storeSecretKey(context, mKeystoreAlias, null);
         try {
