@@ -109,37 +109,7 @@ public class TestSharedPrefListener extends AndroidTestCase {
         editor.putString(TEST_STRING_KEY, TEST_STRING_VALUE).apply();
     }
 
-    public void testNullTypedBundleFailureCommit() {
-        init();
-        mSharedPreferenceVault.clearStorage();
-        SharedPreferences.Editor editor = mSharedPreferenceVault.setSharedPrefVaultWriteListener(
-                new SharedPrefVaultWriteListenerExtension(new OnComplete() {
-                    @Override
-                    public void onComplete(boolean success) {
-                        assertFalse("Data was added to the SharedPref", success);
-                    }
-                })
-        ).edit();
-
-        editor.commit();
-    }
-
-    public void testNullTypedBundleFailureApply() {
-        init();
-        mSharedPreferenceVault.clearStorage();
-        SharedPreferences.Editor editor = mSharedPreferenceVault.setSharedPrefVaultWriteListener(
-                new SharedPrefVaultWriteListenerExtension(new OnComplete() {
-                    @Override
-                    public void onComplete(boolean success) {
-                        assertFalse("Data was Added to the SharedPref", success);
-                    }
-                })
-        ).edit();
-
-        editor.putString(TEST_STRING_KEY, TEST_STRING_VALUE).apply();
-    }
-
-    public void testNullKeyFailureCommit() {
+    public void testNullSecretKeyFailureCommit() {
         init();
         mSharedPreferenceVault.clearStorage();
         SharedPreferences.Editor editor = mSharedPreferenceVault.setSharedPrefVaultWriteListener(
@@ -154,7 +124,7 @@ public class TestSharedPrefListener extends AndroidTestCase {
         editor.putString(TEST_STRING_KEY, TEST_STRING_VALUE).commit();
     }
 
-    public void testNullKeyFailureApply() {
+    public void testNullSecretKeyFailureApply() {
         init();
         mSharedPreferenceVault.clearStorage();
         SharedPreferences.Editor editor = mSharedPreferenceVault.setSharedPrefVaultWriteListener(
