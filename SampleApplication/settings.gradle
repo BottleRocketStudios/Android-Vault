@@ -1,1 +1,8 @@
 include ':app'
+
+rootProject.name='root'
+includeBuild('../AndroidVault') {
+    dependencySubstitution {
+        substitute module("com.bottlerocketstudios:vault") with project(':vault')
+    }
+}
