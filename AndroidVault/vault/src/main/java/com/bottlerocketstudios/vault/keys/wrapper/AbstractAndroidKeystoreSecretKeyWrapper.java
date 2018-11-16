@@ -33,6 +33,8 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -79,8 +81,9 @@ public abstract class AbstractAndroidKeystoreSecretKeyWrapper implements SecretK
                 }
                 // Even if we just generated the key, always read it back to ensure we
                 // can read it successfully.
-                final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(mAlias, null);
-                mKeyPair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
+                PrivateKey privateKey = (PrivateKey) keyStore.getKey(mAlias, null);
+                PublicKey publicKey = privateKey != null ? keyStore.getCertificate(mAlias).getPublicKey() : null;
+                mKeyPair = new KeyPair(publicKey, privateKey);
             }
         }
         return mKeyPair;
